@@ -1,0 +1,27 @@
+
+   Commits                  Diffs/Comments
+  .------------------------.--------------------------------------------.
+  : 0dfaa12 Some thing     : -OLD 0001                                  :
+  :                        : -OLD 0002                                  :
+  :                        : -OLD 0003                                  :
+  :                        : +NEW aaaa                                  :
+  :                        : +NEW bbbb                                  :
+  :                        :--------------------------------------------:
+  :                        :        ^  This mod here affects xyz        :  <-- comment on a particular line in the diff.
+  :                        :           and is later reverted in v1.62   :      Internally the position is based on:
+  :                        :--------------------------------------------:           1. The commit#
+  :                        : +NEW cccc                                  :           2. The filename
+  :                        : context a                                  :           3. The line# offset within the file
+  :                        : context b                                  :           4. Whether the comment was for the + or - section
+  :                        : :                                          :
+  `------------------------`--------------------------------------------`
+
+
+      Perhaps the easiest way to identify the diff line is how many lines
+      offset from the top of the diff.
+
+      Should take into account the lines of context.
+
+      It's possible the context should always be the entire file, so
+      comments can be made anywhere in the file, including on lines that
+      weren't changed. This way line#s can be referenced.
