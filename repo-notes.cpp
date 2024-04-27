@@ -52,14 +52,14 @@ void UpdateFilenameBrowser(string& hash)
     }
 
     // Update browser with filenames from loaded diffs[]
-    commit_files_browser->clear();
+    filename_browser->clear();
     for (size_t i=0; i<diffs.size(); i++ ) {
-	commit_files_browser->add(diffs[i].filename().c_str());
+	filename_browser->add(diffs[i].filename().c_str());
     }
     // Pick the first item
     if (diffs.size() > 0) {
-        commit_files_browser->select(1);	// one based!
-        commit_files_browser->do_callback();
+        filename_browser->select(1);	// one based!
+        filename_browser->do_callback();
     }
 }
 
@@ -77,12 +77,12 @@ void GitLogBrowser_CB(Fl_Widget*, void*)
     UpdateFilenameBrowser(hash);
 }
 
-void CommitFilesBrowser_CB(Fl_Widget*, void*)
+// Someone clicked on the filename browser
+void FilenameBrowser_CB(Fl_Widget*, void*)
 {
-    int index = commit_files_browser->value();
-    const char *s = index > 0 ? commit_files_browser->text(index)
-                              : "";
-    cout << "commit files browser picked: " << s << endl;
+    int index = filename_browser->value();
+    const char *s = (index > 0) ? filename_browser->text(index) : "";
+    cout << "commit files browser picked: '" << s << "'" << endl;
 }
 
 int main()
@@ -92,8 +92,10 @@ int main()
     win->show();
 
     // Configure callbacks
+    git_log_browser->when(FL_WHEN_CHANGED);
     git_log_browser->callback(GitLogBrowser_CB);
-    commit_files_browser->callback(CommitFilesBrowser_CB);
+    filename_browser->when(FL_WHEN_CHANGED);
+    filename_browser->callback(FilenameBrowser_CB);
 
     // Load all commits for current project
     vector<Commit> commits;
@@ -103,7 +105,6 @@ int main()
 	exit(1);
     }
     UpdateGitLogBrowser(commits);
-
 
     return Fl::run();
 }

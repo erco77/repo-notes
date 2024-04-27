@@ -1,6 +1,7 @@
 #include "Subs.H"
 #include "Diff.H"
 
+#include <string.h>	// strncmp
 #include <iostream>
 
 // Load all diffs for the specified hash
