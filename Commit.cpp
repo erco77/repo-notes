@@ -1,3 +1,5 @@
+// vim: autoindent tabstop=8 shiftwidth=4 expandtab softtabstop=4
+
 #include "Subs.H"
 #include "Commit.H"
 
@@ -24,13 +26,13 @@ int LoadCommits(vector<Commit>& commits, string& errmsg)
     char comment[1000];
     Commit commit;
     for (int i=0; i<(int)lines.size(); i++ ) {
-        string line = lines[i] + "\n";		// need trailing "\n" for sscanf()
+        string line = lines[i] + "\n";          // need trailing "\n" for sscanf()
         const char *s = line.c_str();
-	if (sscanf(s, "%99s %999[^\n]", hash, comment) == 2) {
-	    commit.hash(hash);
-	    commit.comment(comment);
-	    commits.push_back(commit);
-	}
+        if (sscanf(s, "%99s %999[^\n]", hash, comment) == 2) {
+            commit.hash(hash);
+            commit.comment(comment);
+            commits.push_back(commit);
+        }
     }
     return 0;
 }

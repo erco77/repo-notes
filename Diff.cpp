@@ -1,7 +1,9 @@
+// vim: autoindent tabstop=8 shiftwidth=4 expandtab softtabstop=4
+
 #include "Subs.H"
 #include "Diff.H"
 
-#include <string.h>	// strncmp
+#include <string.h>     // strncmp
 #include <iostream>
 
 // Load all diffs for the specified hash
@@ -10,8 +12,8 @@
 //   -1 on error (errmsg has reason)
 //
 int LoadDiffs(string& hash,
-	      vector<Diff> &diffs,
-	      string& errmsg)
+              vector<Diff> &diffs,
+              string& errmsg)
 {
     // Load all diffs for this commit
     vector<string> lines;
@@ -32,11 +34,11 @@ int LoadDiffs(string& hash,
     //    |
     //    |    Initial commit: initial development
     //    |
-    //    |diff --git a/Makefile b/Makefile		<-- START EACH NEW DIFF HERE
+    //    |diff --git a/Makefile b/Makefile             <-- START EACH NEW DIFF HERE
     //    |new file mode 100644  ^^^^^^^^^^ --> We want this as the filename of the diff, without the "b/"
     //    |index 0000000..e692784
     //    |--- /dev/null
-    //    |+++ b/Makefile		                <-- WE NEED THESE FOR filenames[], without the "b/"
+    //    |+++ b/Makefile                               <-- WE NEED THESE FOR filenames[], without the "b/"
     //    |@@ -0,0 +1,8 @@
     //    |+run: repo-notes         
     //    |+       ./repo-notes
@@ -46,23 +48,23 @@ int LoadDiffs(string& hash,
     char diff_filename[512];
     for (int i=0; i<(int)lines.size(); i++) {
         const char *s = lines[i].c_str();
-	cout << "Working on: " << s << endl;
-	// New diff?
-	if (sscanf(s, "diff --git %*s %511s", diff_filename) == 1) {
-	    cout << "--- DIFF FILENAME: " << diff_filename << endl;
-	    // Save previous (if any)
-	    if (diff.filename() != "") {
-	        diffs.push_back(diff);
-		diff.clear();
-	    }
-	    // Set filename, skip leading "b/" prefix, if any
-	    if (strncmp(diff_filename, "b/", 2)==0) diff.filename(diff_filename+2);
-	    else                                    diff.filename(diff_filename);
-	}
-	// Add all lines to diff (only if already working on one)
-	if (diff.filename() != "") {
-	    diff.add(lines[i]);
-	}
+        cout << "Working on: " << s << endl;
+        // New diff?
+        if (sscanf(s, "diff --git %*s %511s", diff_filename) == 1) {
+            cout << "--- DIFF FILENAME: " << diff_filename << endl;
+            // Save previous (if any)
+            if (diff.filename() != "") {
+                diffs.push_back(diff);
+                diff.clear();
+            }
+            // Set filename, skip leading "b/" prefix, if any
+            if (strncmp(diff_filename, "b/", 2)==0) diff.filename(diff_filename+2);
+            else                                    diff.filename(diff_filename);
+        }
+        // Add all lines to diff (only if already working on one)
+        if (diff.filename() != "") {
+            diff.add(lines[i]);
+        }
     }
     // Append last diff
     if (diff.filename() != "") {

@@ -1,3 +1,5 @@
+// vim: autoindent tabstop=8 shiftwidth=4 expandtab softtabstop=4
+
 #ifndef SUBS_H
 #define SUBS_H
 

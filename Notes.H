@@ -1,3 +1,5 @@
+// vim: autoindent tabstop=8 shiftwidth=4 expandtab softtabstop=4
+
 #ifndef NOTES_H
 #define NOTES_H
 
@@ -39,6 +41,5 @@ public:
     int  total_notes(void) const   { return notes_.size(); }
     Note& get_note(int index)      { return notes_[index]; }
 };
-
 
 #endif

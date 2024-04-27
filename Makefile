@@ -1,3 +1,5 @@
+# vim: autoindent tabstop=8 shiftwidth=8 noexpandtab softtabstop=8
+
 FLTKDIR=/usr/local/src/fltk-1.4.x.git/
 FLTKCONFIG=$(FLTKDIR)/build/fltk-config
 FLUID=$(FLTKDIR)/build/bin/fluid

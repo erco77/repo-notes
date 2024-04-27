@@ -1,3 +1,5 @@
+// vim: autoindent tabstop=8 shiftwidth=4 expandtab softtabstop=4
+
 #include <sys/stat.h>   // mkdir(), etc
 #include <sys/types.h>
 #include <stdio.h>      // popen

@@ -1,3 +1,5 @@
+// vim: autoindent tabstop=8 shiftwidth=4 expandtab softtabstop=4
+
 // Make notes on a repo's diffs
 
 #include <sys/stat.h>   // mkdir(), etc
@@ -20,22 +22,22 @@ using namespace std;
 #include "MainWindow.H"
 
 // Back end
-#include "Subs.H"	// subs to support this project
-#include "Notes.H"	// our notes
-#include "Commit.H"	// commits from git
-#include "Diff.H"	// single commit diff
+#include "Subs.H"       // subs to support this project
+#include "Notes.H"      // our notes
+#include "Commit.H"     // commits from git
+#include "Diff.H"       // single commit diff
 
 // Run 'git log' and put its output in the left browser
 void UpdateGitLogBrowser(vector<Commit>& commits)
 {
     git_log_browser->clear();
     for (size_t i=0; i<commits.size(); i++ ) {
-	git_log_browser->add(commits[i].oneline().c_str());
+        git_log_browser->add(commits[i].oneline().c_str());
     }
     // Pick the first item
     if (commits.size() > 0) {
-        git_log_browser->select(1);	// one based!
-	git_log_browser->do_callback();
+        git_log_browser->select(1);     // one based!
+        git_log_browser->do_callback();
     }
 }
 
@@ -47,18 +49,18 @@ void UpdateFilenameBrowser(string& hash)
     // Load diffs for first commit (if any)
     vector<Diff> diffs;
     if (LoadDiffs(hash, diffs, errmsg) < 0) {
-	fl_alert("ERROR: %s" , errmsg.c_str());
-	exit(1);
+        fl_alert("ERROR: %s" , errmsg.c_str());
+        exit(1);
     }
 
     // Update browser with filenames from loaded diffs[]
     filename_browser->clear();
     for (size_t i=0; i<diffs.size(); i++ ) {
-	filename_browser->add(diffs[i].filename().c_str());
+        filename_browser->add(diffs[i].filename().c_str());
     }
     // Pick the first item
     if (diffs.size() > 0) {
-        filename_browser->select(1);	// one based!
+        filename_browser->select(1);    // one based!
         filename_browser->do_callback();
     }
 }
@@ -72,7 +74,7 @@ void GitLogBrowser_CB(Fl_Widget*, void*)
 
     // Parse hash
     int si = hash.find(' ');
-    if (si<=0) return;		// nothing picked
+    if (si<=0) return;          // nothing picked
     hash.resize(si);
     UpdateFilenameBrowser(hash);
 }
@@ -102,7 +104,7 @@ int main()
     string errmsg;
     if (LoadCommits(commits, errmsg) < 0) {
         fl_alert("ERROR: %s" , errmsg.c_str());
-	exit(1);
+        exit(1);
     }
     UpdateGitLogBrowser(commits);
 

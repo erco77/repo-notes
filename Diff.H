@@ -1,3 +1,5 @@
+// vim: autoindent tabstop=8 shiftwidth=4 expandtab softtabstop=4
+
 #ifndef DIFF_H
 #define DIFF_H
 
@@ -10,8 +12,8 @@ using namespace std;
 // Diff - A single file's diffs
 //
 class Diff {
-    string filename_;		// filename for this diff
-    vector<string> diff_lines_;	// lines of diff
+    string filename_;           // filename for this diff
+    vector<string> diff_lines_; // lines of diff
     // TODO: Add vector<Note> here too? May be several for each diff
 public:
     Diff()  { }
