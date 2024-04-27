@@ -16,7 +16,9 @@ using namespace std;
 
 #include <FL/Fl.H>
 #include <FL/fl_message.H>
-#include "MainWindow.h"
+#include "MainWindow.H"
+#include "Subs.H"
+#include "Commit.H"
 
 // Each multiline note is managed in a <commit>/notes file
 //
@@ -86,21 +88,6 @@ public:
     Note& get_note(int index)      { return notes_[index]; }
 };
 
-// CommitFileDiffs
-//    An individual file's commit diffs
-//
-class CommitFileDiffs {
-    string commit_;		// commit hash
-    string filename_;		// has the leading "b/" removed
-    string diff_text_;		// the entire diff text
-public:
-    CommitFileDiffs() { }
-    ~CommitFileDiffs() { }
-    void commit(const string& val)    { commit_    = val; }
-    void filename(const string& val)  { filename_  = val; }
-    void diff_text(const string& val) { diff_text_ = val; }
-};
-
 // Is dirname a directory?
 bool IsDir(const string& dirname) {
     struct stat buf;
@@ -122,92 +109,6 @@ string CommitFilename(const string& commit) {
     if (!IsDir(filename)) mkdir(filename.c_str(), 0777);
     filename += string("/") + commit;
     return filename;
-}
-
-// Strip out the trailing \n from string s
-void StripCRLF(char *s) {
-    s = strchr(s, '\n');
-    if (s) *s = 0;
-}
-
-// Run 'command' and return its output in lines[]
-// Returns:
-//    0 on success
-//   -1 on error (errmsg has reason)
-//
-int LoadCommand(const string& command,
-                vector<string>& lines,
-                string& errmsg)
-{
-    char s[2048];
-    FILE *fp = popen(command.c_str(), "r");
-    if (!fp) {
-        errmsg += string("Command '") + command + string("': ") + string(strerror(errno));
-        return -1;
-    }
-    while (fgets(s, sizeof(s)-1, fp)) {
-        StripCRLF(s);
-        lines.push_back(string(s));
-    }
-    pclose(fp);
-    return 0;
-}
-
-void Show(vector<string>& lines)
-{
-    for (int i=0; i<(int)lines.size(); i++ )
-        cout << i << ": " << lines[i] << "\n";
-}
-
-class Commit {
-    string hash_;
-    string comment_;
-public:
-    Commit()  { }
-    ~Commit() { }
-
-    // Entire commit as one line (hash + comment)
-    string oneline(void) const  { string out = hash_ + string(" ") + comment_; return out; }
-
-    // Commit hash
-    void   hash(const char* val) { hash_ = val; }
-    void   hash(string &val)     { hash_ = val; }
-    string hash(void) const      { return hash_; }
-
-    // Commit comment
-    void   comment(const char* val) { comment_ = val; }
-    void   comment(string &val)     { comment_ = val; }
-    string comment(void) const      { return comment_; }
-};
-
-void LoadCommits(vector<Commit>& commits)
-{
-    // Load one line git log
-    // Example:
-    //  _____________________________________________
-    // |5f50819 (HEAD -> master) Added notes file
-    // |210e73d Initial commit: initial development
-    //  ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    //  hash    comment
-    //
-    vector<string> lines;
-    string errmsg;
-    if (LoadCommand(string("git log --oneline"), lines, errmsg) < 0) {
-        fl_alert("ERROR: %s" , errmsg.c_str());
-        exit(1);
-    }
-    char hash[100];
-    char comment[1000];
-    Commit commit;
-    for (int i=0; i<(int)lines.size(); i++ ) {
-        string line = lines[i] + "\n";		// need trailing "\n" for sscanf()
-        const char *s = line.c_str();
-	if (sscanf(s, "%99s %999[^\n]", hash, comment) == 2) {
-	    commit.hash(hash);
-	    commit.comment(comment);
-	    commits.push_back(commit);
-	}
-    }
 }
 
 // Run 'git log' and put its output in the left browser
@@ -255,7 +156,7 @@ void LoadDiffs(string& hash, vector<Diff> &diffs)
     vector<string> lines;
     string errmsg;
     cout << "Loading diffs from hash " << hash << ": ";
-    if (LoadCommand(string("git show -U10000 ") + hash, lines, errmsg) < 0) {
+    if (LoadCommand_SUBS(string("git show -U10000 ") + hash, lines, errmsg) < 0) {
         fl_alert("ERROR: %s" , errmsg.c_str());
         exit(1);
     }
@@ -318,7 +219,11 @@ int main()
 
     // Load all commits for current project
     vector<Commit> commits;
-    LoadCommits(commits);
+    string errmsg;
+    if (LoadCommits(commits, errmsg) < 0) {
+        fl_alert("ERROR: %s" , errmsg.c_str());
+	exit(1);
+    }
     UpdateGitLogBrowser(commits);
 
     // Load diffs for first commit (if any)
@@ -331,4 +236,3 @@ int main()
 
     return Fl::run();
 }
-

@@ -16,8 +16,19 @@ MainWindow.cpp: MainWindow.fl
 MainWindow.o: MainWindow.cpp MainWindow.H
 	$(CXX) $(CXXFLAGS) MainWindow.cpp -c
 
-repo-notes: repo-notes.cpp MainWindow.o
-	$(CXX) $(CXXFLAGS) repo-notes.cpp MainWindow.o $(LINKFLTK_IMG) -o repo-notes
+Subs.o: Subs.cpp Subs.H
+	$(CXX) $(CXXFLAGS) Subs.cpp -c
+
+Commit.o: Commit.cpp Commit.H
+	$(CXX) $(CXXFLAGS) Commit.cpp -c
+
+repo-notes: repo-notes.cpp MainWindow.o Commit.o Subs.o
+	$(CXX) $(CXXFLAGS) \
+	    repo-notes.cpp \
+	    Subs.o \
+	    Commit.o \
+	    MainWindow.o \
+	    $(LINKFLTK_IMG) -o repo-notes
 
 clean:
 	/bin/rm -f repo-notes MainWindow.o   2> /dev/null
