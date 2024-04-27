@@ -29,7 +29,7 @@ using namespace std;
 void UpdateGitLogBrowser(vector<Commit>& commits)
 {
     git_log_browser->clear();
-    for (int i=0; i<(int)commits.size(); i++ ) {
+    for (size_t i=0; i<commits.size(); i++ ) {
 	git_log_browser->add(commits[i].oneline().c_str());
     }
 }
@@ -46,9 +46,9 @@ void UpdateFilenameBrowser(string& hash)
 	exit(1);
     }
 
-    // Update browser
+    // Update browser with filenames from loaded diffs[]
     commit_files_browser->clear();
-    for (int i=0; i<(int)diffs.size(); i++ ) {
+    for (size_t i=0; i<diffs.size(); i++ ) {
 	commit_files_browser->add(diffs[i].filename().c_str());
     }
 }
