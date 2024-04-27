@@ -54,63 +54,6 @@ using namespace std;
 //     Also, a highlighted line in that window can have a right click menu to add new notes.
 // 
 
-// Note
-//    A single note for a specific commit/filename/line offset
-//
-class Note {
-    string commit_;             // commit hash for this note
-    string filename_;           // filename this note is assigned to
-    int    line_;               // line# into CommitFileDiff for note to be inserted
-    string note_;               // the note's text
-
-public:
-    Note() {
-        line_ = -1;
-    }
-    void commit(const string& val)   { commit_   = val; }
-    void filename(const string& val) { filename_ = val; }
-    void line(int val)               { line_     = val; }
-    void note(const string& val)     { note_     = val; }
-};
-
-// CommitNotes
-//    All notes for a particular commit
-//
-class CommitNotes {
-    string       commit_;          // commit hash for this array of notes
-    vector<Note> notes_;           // all notes for this commit
-public:
-    CommitNotes() { }
-    ~CommitNotes() { }
-    void commit(const string& val) { commit_ = val; }
-    void add_note(Note& note)      { notes_.push_back(note); }
-    int  total_notes(void) const   { return notes_.size(); }
-    Note& get_note(int index)      { return notes_[index]; }
-};
-
-// Is dirname a directory?
-bool IsDir(const string& dirname) {
-    struct stat buf;
-    if (stat(dirname.c_str(), &buf) < 0) return false;
-    if (! (buf.st_mode & S_IFDIR)) return false;
-    return true;
-}
-
-// Return the ".repo-notes" directory name for the current project
-string RepoDirname(void) {
-    string dirname = ".repo-notes";        // XXX: hack; hunt in cwd and parents for .git
-    if (!IsDir(dirname)) mkdir(dirname.c_str(), 0777);
-    return dirname;
-}
-
-// Return the notes filename for a particular commit
-string CommitFilename(const string& commit) {
-    string filename = RepoDirname() + string("/commits");
-    if (!IsDir(filename)) mkdir(filename.c_str(), 0777);
-    filename += string("/") + commit;
-    return filename;
-}
-
 // Run 'git log' and put its output in the left browser
 void UpdateGitLogBrowser(vector<Commit>& commits)
 {
