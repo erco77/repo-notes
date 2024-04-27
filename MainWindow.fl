@@ -4,8 +4,8 @@ header_name {.h}
 code_name {.cxx}
 Function {make_window()} {open
 } {
-  Fl_Window {} {open
-    xywh {998 64 920 500} type Double visible
+  Fl_Window {} {open selected
+    xywh {398 45 920 500} type Double resizable visible
   } {
     Fl_Menu_Bar menubar {open
       xywh {0 0 920 25}
@@ -33,7 +33,7 @@ Function {make_window()} {open
       Fl_Browser commit_files_browser {
         xywh {250 25 250 475} type Hold textfont 13 textsize 10
       }
-      Fl_Browser commit_diff_browser {selected
+      Fl_Browser commit_diff_browser {
         xywh {500 25 420 475} type Hold textfont 13 textsize 10
       }
     }

@@ -56,6 +56,11 @@ void UpdateFilenameBrowser(string& hash)
     for (size_t i=0; i<diffs.size(); i++ ) {
 	commit_files_browser->add(diffs[i].filename().c_str());
     }
+    // Pick the first item
+    if (diffs.size() > 0) {
+        commit_files_browser->select(1);	// one based!
+        commit_files_browser->do_callback();
+    }
 }
 
 // Someone clicked on a new commit line
