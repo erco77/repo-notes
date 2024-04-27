@@ -34,13 +34,45 @@ void UpdateGitLogBrowser(vector<Commit>& commits)
     }
 }
 
-// Run 'git log' and put its output in the left browser
-void UpdateFilenameBrowser(vector<Diff>& diffs)
+// Update the filename browser with files from commit 'hash'
+void UpdateFilenameBrowser(string& hash)
 {
+    string errmsg;
+
+    // Load diffs for first commit (if any)
+    vector<Diff> diffs;
+    if (LoadDiffs(hash, diffs, errmsg) < 0) {
+	fl_alert("ERROR: %s" , errmsg.c_str());
+	exit(1);
+    }
+
+    // Update browser
     commit_files_browser->clear();
     for (int i=0; i<(int)diffs.size(); i++ ) {
 	commit_files_browser->add(diffs[i].filename().c_str());
     }
+}
+
+// Someone clicked on a new commit line
+void GitLogBrowser_CB(Fl_Widget*, void*)
+{
+    int index   = git_log_browser->value();
+    string hash = (index > 0) ? git_log_browser->text(index) : "";
+    cout << "log browser picked: '" << hash << "'" << endl;
+
+    // Parse hash
+    int si = hash.find(' ');
+    if (si<=0) return;		// nothing picked
+    hash.resize(si);
+    UpdateFilenameBrowser(hash);
+}
+
+void CommitFilesBrowser_CB(Fl_Widget*, void*)
+{
+    int index = commit_files_browser->value();
+    const char *s = index > 0 ? commit_files_browser->text(index)
+                              : "";
+    cout << "commit files browser picked: " << s << endl;
 }
 
 int main()
@@ -48,6 +80,10 @@ int main()
     Fl_Double_Window *win = make_window();
     win->end();
     win->show();
+
+    // Configure callbacks
+    git_log_browser->callback(GitLogBrowser_CB);
+    commit_files_browser->callback(CommitFilesBrowser_CB);
 
     // Load all commits for current project
     vector<Commit> commits;
@@ -58,16 +94,6 @@ int main()
     }
     UpdateGitLogBrowser(commits);
 
-    // Load diffs for first commit (if any)
-    vector<Diff> diffs;
-    if (commits.size()) {
-        string hash = commits[0].hash();
-	if (LoadDiffs(hash, diffs, errmsg) < 0) {
-	    fl_alert("ERROR: %s" , errmsg.c_str());
-	    exit(1);
-	}
-	UpdateFilenameBrowser(diffs);
-    }
 
     return Fl::run();
 }
