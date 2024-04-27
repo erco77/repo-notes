@@ -1,0 +1,41 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0400
+header_name {.h}
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  Fl_Window {} {open
+    xywh {998 64 920 500} type Double visible
+  } {
+    Fl_Menu_Bar menubar {open
+      xywh {0 0 920 25}
+    } {
+      Submenu {} {
+        label File open
+        xywh {0 0 100 20}
+      } {
+        MenuItem {} {
+          label Quit
+          xywh {0 0 100 20}
+        }
+      }
+      Submenu {} {
+        label Edit open
+        xywh {0 0 100 20}
+      } {}
+    }
+    Fl_Tile tile {open
+      xywh {0 25 920 475} box FLAT_BOX color 46
+    } {
+      Fl_Browser git_log_browser {
+        xywh {0 25 250 475} type Select textfont 13 textsize 10
+      }
+      Fl_Browser commit_files_browser {
+        xywh {250 25 250 475} type Select textfont 13 textsize 10
+      }
+      Fl_Browser commit_diff_browser {selected
+        xywh {500 25 420 475} type Select textfont 13 textsize 10
+      }
+    }
+  }
+}

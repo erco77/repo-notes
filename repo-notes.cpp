@@ -1,0 +1,331 @@
+// Make notes on a repo's diffs
+
+#include <sys/stat.h>   // mkdir(), etc
+#include <sys/types.h>
+#include <stdio.h>      // popen
+#include <string.h>     // strchr
+#include <unistd.h>
+#include <fcntl.h>
+
+#include <string>       // std::string
+#include <vector>       // std::vector
+#include <iostream>     // cout, cerr
+#include <sstream>
+
+using namespace std;
+
+#include <FL/Fl.H>
+#include <FL/fl_message.H>
+#include "MainWindow.h"
+
+// Each multiline note is managed in a <commit>/notes file
+//
+//      ~/.reponotes/preferences                        - gui prefs
+//      ~/.reponotes/commits/<commit>/notes             - all notes for this commit
+//
+// ----
+// Widget:
+//
+//    Commits                   File                     Diffs/comments
+//   .------------------------..-----------------------..--------------------------------------------.
+//   : 0dfaa12 Recent commit  :: somewhere/Makefile    :: somewhere/Makefile                         :  <-- file header
+//   : ff77abc older commit   :: somewhere/foo.c       ::............................................:
+//   :                        :: somewhere/bar.c       :: --- -OLD 0001                              :
+//   :                        ::                       :: --- -OLD 0002                              :
+//   :                        ::                       :: --- -OLD 0003                              :
+//   :                        ::                       :: 001 +NEW aaaa                              :
+//   :                        ::                       :: 002 +NEW bbbb                              :
+//   :                        ::                       ::============================================:
+//   :                        ::                       ::     ^  This mod here affects ABC and       :
+//   :                        ::                       ::        is later reverted in commit XYZ     :
+//   :                        ::                       ::============================================:
+//   :                        ::                       :: 003 +NEW cccc                              :
+//   :                        ::                       :: 004 context a                              :
+//   :                        ::                       :: 005 context b                              :
+//   :                        ::                       :: 006                                        :
+//   `------------------------``-----------------------``--------------------------------------------`
+//
+// Fitting notes:
+//     As diff (unlimited context) is added to Diffs/comments widget, it looks matching lines#
+//     from the Notes data, and begins an insert of the text for that note (between the ==='s above)
+//     which can be edited via right click menu.
+//     Also, a highlighted line in that window can have a right click menu to add new notes.
+// 
+
+// Note
+//    A single note for a specific commit/filename/line offset
+//
+class Note {
+    string commit_;             // commit hash for this note
+    string filename_;           // filename this note is assigned to
+    int    line_;               // line# into CommitFileDiff for note to be inserted
+    string note_;               // the note's text
+
+public:
+    Note() {
+        line_ = -1;
+    }
+    void commit(const string& val)   { commit_   = val; }
+    void filename(const string& val) { filename_ = val; }
+    void line(int val)               { line_     = val; }
+    void note(const string& val)     { note_     = val; }
+};
+
+// CommitNotes
+//    All notes for a particular commit
+//
+class CommitNotes {
+    string       commit_;          // commit hash for this array of notes
+    vector<Note> notes_;           // all notes for this commit
+public:
+    CommitNotes() { }
+    ~CommitNotes() { }
+    void commit(const string& val) { commit_ = val; }
+    void add_note(Note& note)      { notes_.push_back(note); }
+    int  total_notes(void) const   { return notes_.size(); }
+    Note& get_note(int index)      { return notes_[index]; }
+};
+
+// CommitFileDiffs
+//    An individual file's commit diffs
+//
+class CommitFileDiffs {
+    string commit_;		// commit hash
+    string filename_;		// has the leading "b/" removed
+    string diff_text_;		// the entire diff text
+public:
+    CommitFileDiffs() { }
+    ~CommitFileDiffs() { }
+    void commit(const string& val)    { commit_    = val; }
+    void filename(const string& val)  { filename_  = val; }
+    void diff_text(const string& val) { diff_text_ = val; }
+};
+
+// Is dirname a directory?
+bool IsDir(const string& dirname) {
+    struct stat buf;
+    if (stat(dirname.c_str(), &buf) < 0) return false;
+    if (! (buf.st_mode & S_IFDIR)) return false;
+    return true;
+}
+
+// Return the ".repo-notes" directory name for the current project
+string RepoDirname(void) {
+    string dirname = ".repo-notes";        // XXX: hack; hunt in cwd and parents for .git
+    if (!IsDir(dirname)) mkdir(dirname.c_str(), 0777);
+    return dirname;
+}
+
+// Return the notes filename for a particular commit
+string CommitFilename(const string& commit) {
+    string filename = RepoDirname() + string("/commits");
+    if (!IsDir(filename)) mkdir(filename.c_str(), 0777);
+    filename += string("/") + commit;
+    return filename;
+}
+
+// Strip out the trailing \n from string s
+void StripCRLF(char *s) {
+    s = strchr(s, '\n');
+    if (s) *s = 0;
+}
+
+// Run 'command' and return its output in lines[]
+// Returns:
+//    0 on success
+//   -1 on error (errmsg has reason)
+//
+int LoadCommand(const string& command,
+                vector<string>& lines,
+                string& errmsg)
+{
+    char s[2048];
+    FILE *fp = popen(command.c_str(), "r");
+    if (!fp) {
+        errmsg += string("Command '") + command + string("': ") + string(strerror(errno));
+        return -1;
+    }
+    while (fgets(s, sizeof(s)-1, fp)) {
+        StripCRLF(s);
+        lines.push_back(string(s));
+    }
+    pclose(fp);
+    return 0;
+}
+
+void Show(vector<string>& lines)
+{
+    for (int i=0; i<(int)lines.size(); i++ )
+        cout << i << ": " << lines[i] << "\n";
+}
+
+class Commit {
+    string hash_;
+    string comment_;
+public:
+    Commit()  { }
+    ~Commit() { }
+
+    // Entire commit as one line (hash + comment)
+    string oneline(void) const  { string out = hash_ + string(" ") + comment_; return out; }
+
+    // Commit hash
+    void   hash(const char* val) { hash_ = val; }
+    void   hash(string &val)     { hash_ = val; }
+    string hash(void) const      { return hash_; }
+
+    // Commit comment
+    void   comment(const char* val) { comment_ = val; }
+    void   comment(string &val)     { comment_ = val; }
+    string comment(void) const      { return comment_; }
+};
+
+void LoadCommits(vector<Commit>& commits)
+{
+    // Load one line git log
+    // Example:
+    //  _____________________________________________
+    // |5f50819 (HEAD -> master) Added notes file
+    // |210e73d Initial commit: initial development
+    //  ^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //  hash    comment
+    //
+    vector<string> lines;
+    string errmsg;
+    if (LoadCommand(string("git log --oneline"), lines, errmsg) < 0) {
+        fl_alert("ERROR: %s" , errmsg.c_str());
+        exit(1);
+    }
+    char hash[100];
+    char comment[1000];
+    Commit commit;
+    for (int i=0; i<(int)lines.size(); i++ ) {
+        const char *s = lines[i].c_str();
+	if (sscanf(s, "%99s %999s", hash, comment) == 2) {
+	    commit.hash(hash);
+	    commit.comment(comment);
+	    commits.push_back(commit);
+	}
+    }
+}
+
+// Run 'git log' and put its output in the left browser
+void UpdateGitLogBrowser(vector<Commit>& commits)
+{
+    git_log_browser->clear();
+    for (int i=0; i<(int)commits.size(); i++ ) {
+	git_log_browser->add(commits[i].oneline().c_str());
+    }
+}
+
+class Diff {
+    string filename_;		// filename for this diff
+    vector<string> diff_lines_;	// lines of diff
+    // TODO: Add vector<Note> here too? May be several for each diff
+public:
+    Diff()  { }
+    ~Diff() { }
+
+    // Set diff filename
+    void filename(const char* val) { filename_ = val; }
+    void filename(string& val)     { filename_ = val; }
+    string filename() const        { return filename_; }
+
+    // Add a diff line
+    void add(const char* val)  { diff_lines_.push_back(string(val)); }
+    void add(string &val)      { diff_lines_.push_back(val); }
+
+    // Clear class
+    void clear(void) { filename(""); diff_lines_.clear(); }
+};
+
+// Run 'git log' and put its output in the left browser
+void UpdateFilenameBrowser(vector<Diff>& diffs)
+{
+    commit_files_browser->clear();
+    for (int i=0; i<(int)diffs.size(); i++ ) {
+	commit_files_browser->add(diffs[i].filename().c_str());
+    }
+}
+
+void LoadDiffs(string& hash, vector<Diff> &diffs)
+{
+    // Load all diffs for this commit
+    vector<string> lines;
+    string errmsg;
+    cout << "Loading diffs from hash " << hash << ": ";
+    if (LoadCommand(string("git show -U10000 ") + hash, lines, errmsg) < 0) {
+        fl_alert("ERROR: %s" , errmsg.c_str());
+        exit(1);
+    }
+    cout << lines.size() << " loaded." << endl;
+
+    // Walk lines of output, look for:
+    //     1. "diff --git" lines, start new Diff
+    //     2. Load all lines into each Diff
+    // Example:
+    //     ________________________________________________________
+    //    |commit 210e73df650ba23011d197a27e6cae5b8b2c9bbe
+    //    |Author: Greg Ercolano <erco@seriss.com>
+    //    |Date:   Wed Apr 24 22:10:52 2024 -0700
+    //    |
+    //    |    Initial commit: initial development
+    //    |
+    //    |diff --git a/Makefile b/Makefile		<-- START EACH NEW DIFF HERE
+    //    |new file mode 100644  ^^^^^^^^^^ --> We want this as the filename of the diff, without the "b/"
+    //    |index 0000000..e692784
+    //    |--- /dev/null
+    //    |+++ b/Makefile		                <-- WE NEED THESE FOR filenames[], without the "b/"
+    //    |@@ -0,0 +1,8 @@
+    //    |+run: repo-notes         
+    //    |+       ./repo-notes
+    //    |..
+    //
+    Diff diff;
+    char diff_filename[512];
+    for (int i=0; i<(int)lines.size(); i++) {
+        const char *s = lines[i].c_str();
+	cout << "Working on: " << s << endl;
+	// New diff?
+	if (sscanf(s, "diff --git %*s %511s", diff_filename) == 1) {
+	    cout << "--- DIFF FILENAME: " << diff_filename << endl;
+	    // Save previous (if any)
+	    if (diff.filename() != "") {
+	        diffs.push_back(diff);
+		diff.clear();
+	    }
+	    diff.filename(diff_filename);
+	}
+	// Add all lines to diff (only if already working on one)
+	if (diff.filename() != "") {
+	    diff.add(lines[i]);
+	}
+    }
+    // Append last diff
+    if (diff.filename() != "") {
+        diffs.push_back(diff);
+    }
+}
+
+int main()
+{
+    Fl_Double_Window *win = make_window();
+    win->end();
+    win->show();
+
+    // Load all commits for current project
+    vector<Commit> commits;
+    LoadCommits(commits);
+    UpdateGitLogBrowser(commits);
+
+    // Load diffs for first commit (if any)
+    vector<Diff> diffs;
+    if (commits.size()) {
+        string hash = commits[0].hash();
+	LoadDiffs(hash, diffs);
+	UpdateFilenameBrowser(diffs);
+    }
+
+    return Fl::run();
+}
+
