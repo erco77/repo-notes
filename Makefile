@@ -22,14 +22,18 @@ Subs.o: Subs.cpp Subs.H
 Commit.o: Commit.cpp Commit.H
 	$(CXX) $(CXXFLAGS) Commit.cpp -c
 
-repo-notes: repo-notes.cpp MainWindow.o Commit.o Subs.o
+Diff.o: Diff.cpp Diff.H
+	$(CXX) $(CXXFLAGS) Diff.cpp -c
+
+repo-notes: repo-notes.cpp MainWindow.o Commit.o Subs.o Diff.o
 	$(CXX) $(CXXFLAGS) \
 	    repo-notes.cpp \
 	    Subs.o \
 	    Commit.o \
+	    Diff.o \
 	    MainWindow.o \
 	    $(LINKFLTK_IMG) -o repo-notes
 
 clean:
-	/bin/rm -f repo-notes MainWindow.o   2> /dev/null
+	/bin/rm -f repo-notes *.o              2> /dev/null
 	/bin/rm -f MainWindow.cpp MainWindow.H 2> /dev/null
