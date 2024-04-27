@@ -32,6 +32,11 @@ void UpdateGitLogBrowser(vector<Commit>& commits)
     for (size_t i=0; i<commits.size(); i++ ) {
 	git_log_browser->add(commits[i].oneline().c_str());
     }
+    // Pick the first item
+    if (commits.size() > 0) {
+        git_log_browser->select(1);	// one based!
+	git_log_browser->do_callback();
+    }
 }
 
 // Update the filename browser with files from commit 'hash'
