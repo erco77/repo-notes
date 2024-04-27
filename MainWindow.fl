@@ -28,13 +28,13 @@ Function {make_window()} {open
       xywh {0 25 920 475} box FLAT_BOX color 46
     } {
       Fl_Browser git_log_browser {
-        xywh {0 25 250 475} type Select textfont 13 textsize 10
+        xywh {0 25 250 475} type Hold textfont 13 textsize 10
       }
       Fl_Browser commit_files_browser {
-        xywh {250 25 250 475} type Select textfont 13 textsize 10
+        xywh {250 25 250 475} type Hold textfont 13 textsize 10
       }
       Fl_Browser commit_diff_browser {selected
-        xywh {500 25 420 475} type Select textfont 13 textsize 10
+        xywh {500 25 420 475} type Hold textfont 13 textsize 10
       }
     }
   }

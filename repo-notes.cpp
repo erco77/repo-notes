@@ -200,8 +200,9 @@ void LoadCommits(vector<Commit>& commits)
     char comment[1000];
     Commit commit;
     for (int i=0; i<(int)lines.size(); i++ ) {
-        const char *s = lines[i].c_str();
-	if (sscanf(s, "%99s %999s", hash, comment) == 2) {
+        string line = lines[i] + "\n";		// need trailing "\n" for sscanf()
+        const char *s = line.c_str();
+	if (sscanf(s, "%99s %999[^\n]", hash, comment) == 2) {
 	    commit.hash(hash);
 	    commit.comment(comment);
 	    commits.push_back(commit);
@@ -294,7 +295,9 @@ void LoadDiffs(string& hash, vector<Diff> &diffs)
 	        diffs.push_back(diff);
 		diff.clear();
 	    }
-	    diff.filename(diff_filename);
+	    // Set filename, skip leading "b/" prefix, if any
+	    if (strncmp(diff_filename, "b/", 2)==0) diff.filename(diff_filename+2);
+	    else                                    diff.filename(diff_filename);
 	}
 	// Add all lines to diff (only if already working on one)
 	if (diff.filename() != "") {
