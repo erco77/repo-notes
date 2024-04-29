@@ -6,7 +6,8 @@
 #include <string.h>     // strncmp
 #include <iostream>
 
-// Load all diffs for the specified hash
+// Load all diffs for the specified hash.
+//
 // Returns:
 //    0 on success, commits[] loaded
 //   -1 on error (errmsg has reason)
@@ -15,6 +16,9 @@ int LoadDiffs(string& hash,
               vector<Diff> &diffs,
               string& errmsg)
 {
+    // Clear previous diffs first
+    diffs.clear();
+
     // Load all diffs for this commit
     vector<string> lines;
     cout << "Loading diffs from hash " << hash << ": ";
@@ -45,6 +49,7 @@ int LoadDiffs(string& hash,
     //    |..
     //
     Diff diff;
+    diff.filename("Comments");
     char diff_filename[512];
     for (int i=0; i<(int)lines.size(); i++) {
         const char *s = lines[i].c_str();
@@ -52,19 +57,18 @@ int LoadDiffs(string& hash,
         // New diff?
         if (sscanf(s, "diff --git %*s %511s", diff_filename) == 1) {
             cout << "--- DIFF FILENAME: " << diff_filename << endl;
-            // Save previous (if any)
-            if (diff.filename() != "") {
-                diffs.push_back(diff);
-                diff.clear();
+            // Save previous diff first
+            diffs.push_back(diff);
+            // Clear diff, set filename, skip leading "b/" prefix if any
+            diff.clear();
+            if (strncmp(diff_filename, "b/", 2)==0) {
+                diff.filename(diff_filename+2);
+            } else {
+                diff.filename(diff_filename);
             }
-            // Set filename, skip leading "b/" prefix, if any
-            if (strncmp(diff_filename, "b/", 2)==0) diff.filename(diff_filename+2);
-            else                                    diff.filename(diff_filename);
         }
-        // Add all lines to diff (only if already working on one)
-        if (diff.filename() != "") {
-            diff.add(lines[i]);
-        }
+        // Add lines to diff
+        diff.add_line(lines[i]);
     }
     // Append last diff
     if (diff.filename() != "") {

@@ -27,6 +27,36 @@ using namespace std;
 #include "Commit.H"     // commits from git
 #include "Diff.H"       // single commit diff
 
+// Globals
+vector<Diff> G_diffs;   // all diffs for current project
+                        // TODO: notes should be in here too
+
+void UpdateDiffsBrowser(vector<Diff>& diffs)
+{
+    diffs_browser->clear();
+
+    // For each diff, add FILENAME and DIFF LINES to browser..
+    for (size_t di=0; di<diffs.size(); di++ ) { // diff index
+        Diff& diff = diffs[di];
+
+        // Add diff filename
+        string filename;
+        filename = string("@B47" "@b" "@l" "@.") + diff.filename();
+        diffs_browser->add(filename.c_str());
+
+        // Add diff lines
+        for (size_t li=0; li<diff.lines(); li++) {  // line index
+            string line = diff.line(li);
+            switch (line[0]) {
+                case '+': line = string("@C60@.") + line; break;
+                case '-': line = string("@C1@." ) + line; break;
+                default:  line = string("@."    ) + line; break;
+            }
+            diffs_browser->add(line.c_str());
+        }
+    }
+}
+
 // Run 'git log' and put its output in the left browser
 void UpdateGitLogBrowser(vector<Commit>& commits)
 {
@@ -42,12 +72,12 @@ void UpdateGitLogBrowser(vector<Commit>& commits)
 }
 
 // Update the filename browser with files from commit 'hash'
-void UpdateFilenameBrowser(string& hash)
+void UpdateFilenameBrowser(string& hash, vector<Diff>& diffs)
 {
     string errmsg;
 
     // Load diffs for first commit (if any)
-    vector<Diff> diffs;
+    diffs.clear();      // clear any previous first
     if (LoadDiffs(hash, diffs, errmsg) < 0) {
         fl_alert("ERROR: %s" , errmsg.c_str());
         exit(1);
@@ -63,6 +93,9 @@ void UpdateFilenameBrowser(string& hash)
         filename_browser->select(1);    // one based!
         filename_browser->do_callback();
     }
+
+    // TODO: Add vector<Note> to Diff, and load any notes files found here
+    //       See the README.txt for design document.
 }
 
 // Someone clicked on a new commit line
@@ -76,7 +109,9 @@ void GitLogBrowser_CB(Fl_Widget*, void*)
     int si = hash.find(' ');
     if (si<=0) return;          // nothing picked
     hash.resize(si);
-    UpdateFilenameBrowser(hash);
+
+    UpdateFilenameBrowser(hash, G_diffs);
+    UpdateDiffsBrowser(G_diffs);
 }
 
 // Someone clicked on the filename browser
