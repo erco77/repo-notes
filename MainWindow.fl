@@ -2,10 +2,11 @@
 version 1.0400
 header_name {.h}
 code_name {.cxx}
-Function {make_window()} {open
+Function {make_window(const char *title = 0)} {open
 } {
   Fl_Window {} {open
-    xywh {398 64 920 500} type Double resizable visible
+    xywh {398 64 920 500} type Double resizable
+    code0 {o->label(title);} visible
   } {
     Fl_Menu_Bar menubar {open
       xywh {0 0 920 25}
@@ -24,7 +25,7 @@ Function {make_window()} {open
         xywh {0 0 100 20}
       } {}
     }
-    Fl_Tile tile {open
+    Fl_Tile tile {open selected
       xywh {0 25 920 475} box FLAT_BOX color 46
     } {
       Fl_Browser git_log_browser {
@@ -33,7 +34,7 @@ Function {make_window()} {open
       Fl_Browser filename_browser {
         xywh {250 25 250 475} type Hold textfont 13 textsize 10
       }
-      Fl_Browser diffs_browser {selected
+      Fl_Browser diffs_browser {
         xywh {500 25 420 475} type Hold textfont 13 textsize 10
       }
     }

@@ -124,9 +124,10 @@ void FilenameBrowser_CB(Fl_Widget*, void*)
 
 int main()
 {
-    Fl_Double_Window *win = make_window();
+    Fl_Double_Window *win = make_window("repo-notes");
     win->end();
     win->show();
+    win->resizable(tile);
 
     // Configure callbacks
     git_log_browser->when(FL_WHEN_CHANGED);
