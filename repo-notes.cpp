@@ -19,6 +19,7 @@ using namespace std;
 // Fltk
 #include <FL/Fl.H>
 #include <FL/fl_message.H>
+#include <FL/Fl_Menu_Button.H>
 #include "MainWindow.H"
 
 // Back end
@@ -52,7 +53,7 @@ void UpdateDiffsBrowser(vector<Diff>& diffs)
                 case '-': line = string("@C1@." ) + line; break;
                 default:  line = string("@."    ) + line; break;
             }
-            diffs_browser->add(line.c_str());
+            diffs_browser->add(line.c_str(), (void*)&diff);
         }
     }
 }
@@ -103,7 +104,7 @@ void GitLogBrowser_CB(Fl_Widget*, void*)
 {
     int index   = git_log_browser->value();
     string hash = (index > 0) ? git_log_browser->text(index) : "";
-    cout << "log browser picked: '" << hash << "'" << endl;
+    //DEBUG cout << "log browser picked: '" << hash << "'" << endl;
 
     // Parse hash
     int si = hash.find(' ');
@@ -122,12 +123,47 @@ void FilenameBrowser_CB(Fl_Widget*, void*)
     cout << "commit files browser picked: '" << s << "'" << endl;
 }
 
+void AddNotes_CB(Fl_Widget *w, void *userdata)
+{
+    Diff *diff = (Diff*)userdata;
+    if (!diff) {
+        fl_alert("ERROR: AddNotes: userdata() is NULL");
+        return;
+    }
+    fl_message("Add notes goes here..");
+}
+
+// Handle posting right-click menu over diffs_browser
+void DiffsBrowserPopupMenu_CB(Fl_Widget *w, void *userdata)
+{
+    // Only interested in right clicks
+    if (Fl::event_button() != 3) return;
+
+    // Get 'Diff' instance as userdata for item clicked on
+    int index = diffs_browser->value();
+    Diff *diff = (Diff*)diffs_browser->data(index);
+    if (!diff) {
+        // must have a diff or we can do nothing
+        fl_alert("ERROR: diffs_browser index %d: userdata() is NULL", index);
+        return;
+    }
+
+    // Dynamically create menu, pop it up
+    Fl_Menu_Button menu(Fl::event_x(), Fl::event_y(), 80, 1);
+    //menu.add(diff->filename().c_str(), 0, 0, 0, FL_MENU_INACTIVE|FL_MENU_DIVIDER);
+    menu.add("Add\\/edit notes..", 0, AddNotes_CB, (void*)diff);
+    menu.popup();
+}
+
 int main()
 {
     Fl_Double_Window *win = make_window("repo-notes");
     win->end();
     win->show();
     win->resizable(tile);
+
+    // Configure diff_browser's popup menu
+    diffs_browser->callback(DiffsBrowserPopupMenu_CB);
 
     // Configure callbacks
     git_log_browser->when(FL_WHEN_CHANGED);

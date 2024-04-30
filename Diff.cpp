@@ -21,11 +21,11 @@ int LoadDiffs(string& hash,
 
     // Load all diffs for this commit
     vector<string> lines;
-    cout << "Loading diffs from hash " << hash << ": ";
+    //DEBUG cout << "Loading diffs from hash " << hash << ": ";
     if (LoadCommand_SUBS(string("git show -U10000 ") + hash, lines, errmsg) < 0) {
         return -1;
     }
-    cout << lines.size() << " loaded." << endl;
+    //DEBUG cout << lines.size() << " loaded." << endl;
 
     // Walk lines of output, look for:
     //     1. "diff --git" lines, start new Diff
@@ -53,10 +53,10 @@ int LoadDiffs(string& hash,
     char diff_filename[512];
     for (int i=0; i<(int)lines.size(); i++) {
         const char *s = lines[i].c_str();
-        cout << "Working on: " << s << endl;
+        //DEBUG cout << "Working on: " << s << endl;
         // New diff?
         if (sscanf(s, "diff --git %*s %511s", diff_filename) == 1) {
-            cout << "--- DIFF FILENAME: " << diff_filename << endl;
+            //DEBUG cout << "--- DIFF FILENAME: " << diff_filename << endl;
             // Save previous diff first
             diffs.push_back(diff);
             // Clear diff, set filename, skip leading "b/" prefix if any

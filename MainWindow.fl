@@ -4,7 +4,7 @@ header_name {.h}
 code_name {.cxx}
 Function {make_window(const char *title = 0)} {open
 } {
-  Fl_Window {} {open
+  Fl_Window mainwin {open selected
     xywh {398 64 920 500} type Double resizable
     code0 {o->label(title);} visible
   } {
@@ -25,7 +25,7 @@ Function {make_window(const char *title = 0)} {open
         xywh {0 0 100 20}
       } {}
     }
-    Fl_Tile tile {open selected
+    Fl_Tile tile {open
       xywh {0 25 920 475} box FLAT_BOX color 46
     } {
       Fl_Browser git_log_browser {
