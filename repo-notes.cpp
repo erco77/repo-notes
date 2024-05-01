@@ -21,6 +21,7 @@ using namespace std;
 #include <FL/fl_message.H>
 #include <FL/Fl_Menu_Button.H>
 #include "MainWindow.H"
+#include "EditNotes.H"
 
 // Back end
 #include "Subs.H"       // subs to support this project
@@ -32,6 +33,8 @@ using namespace std;
 vector<Diff> G_diffs;   // all diffs for current project
                         // TODO: notes should be in here too
 
+EditNotesDialog *G_editnotes = 0;
+
 void UpdateDiffsBrowser(vector<Diff>& diffs)
 {
     diffs_browser->clear();
@@ -42,18 +45,27 @@ void UpdateDiffsBrowser(vector<Diff>& diffs)
 
         // Add diff filename
         string filename;
-        filename = string("@B47" "@b" "@l" "@.") + diff.filename();
+        const char *filename_fmt = "@N"      // Use fl_inactive_color() to draw the text
+                                   "@B47"    // Fill the background with fl_color(n)
+                                   "@b"      // Use a bold font (adds FL_BOLD to font)
+                                   "@l"      // Use a LARGE (24 point) font
+                                   "@.";     // Print rest of line, don't look for more '@' signs
+        const char *grn_fmt = "@C60@.";      // green foreground text
+        const char *red_fmt = "@C1@.";       // red foreground text
+        const char *nor_fmt = "@.";          // normal text (no color)
+        filename = string(filename_fmt) + diff.filename();
         diffs_browser->add(filename.c_str());
 
         // Add diff lines
-        for (size_t li=0; li<diff.lines(); li++) {  // line index
-            string line = diff.line(li);
-            switch (line[0]) {
-                case '+': line = string("@C60@.") + line; break;
-                case '-': line = string("@C1@." ) + line; break;
-                default:  line = string("@."    ) + line; break;
+        for (size_t dli=0; dli<diff.diff_lines(); dli++) {  // vector<DiffLine> index
+            DiffLine &dl = diff.diff_line(dli);
+            string line_str = dl.line_str();
+            switch (line_str[0]) {
+                case '+': line_str = string(grn_fmt) + line_str; break;
+                case '-': line_str = string(red_fmt) + line_str; break;
+                default:  line_str = string(nor_fmt) + line_str; break;
             }
-            diffs_browser->add(line.c_str(), (void*)&diff);
+            diffs_browser->add(line_str.c_str(), (void*)&dl);
         }
     }
 }
@@ -123,14 +135,28 @@ void FilenameBrowser_CB(Fl_Widget*, void*)
     cout << "commit files browser picked: '" << s << "'" << endl;
 }
 
+void YouCantEdit()
+{
+    fl_alert("You can't add/edit the filename header lines.\n"
+             "(Pick one of the diff lines instead)");
+}
+
+// When user hits 'Save' in EditNotesDialog
+void SaveNotes_CB(Fl_Widget *w, void *userdata)
+{
+    DiffLine *dlp = (DiffLine*)userdata;
+    dlp->notes(G_editnotes->notes());       // get new notes
+    G_editnotes->hide();                    // hide dialog
+}
+
 void AddNotes_CB(Fl_Widget *w, void *userdata)
 {
-    Diff *diff = (Diff*)userdata;
-    if (!diff) {
-        fl_alert("ERROR: AddNotes: userdata() is NULL");
-        return;
-    }
-    fl_message("Add notes goes here..");
+    DiffLine *dlp = (DiffLine*)userdata;
+    if (!dlp) return YouCantEdit(); 
+    G_editnotes->title(dlp->filename());                  // set dialog window's title
+    G_editnotes->notes(dlp->notes());                     // load editor with previous notes
+    G_editnotes->save_callback(SaveNotes_CB, (void*)dlp); // save button cb
+    G_editnotes->show();                                  // show dialog
 }
 
 // Handle posting right-click menu over diffs_browser
@@ -141,17 +167,12 @@ void DiffsBrowserPopupMenu_CB(Fl_Widget *w, void *userdata)
 
     // Get 'Diff' instance as userdata for item clicked on
     int index = diffs_browser->value();
-    Diff *diff = (Diff*)diffs_browser->data(index);
-    if (!diff) {
-        // must have a diff or we can do nothing
-        fl_alert("ERROR: diffs_browser index %d: userdata() is NULL", index);
-        return;
-    }
+    DiffLine *dlp = (DiffLine*)diffs_browser->data(index);
+    if (!dlp) return YouCantEdit(); 
 
     // Dynamically create menu, pop it up
     Fl_Menu_Button menu(Fl::event_x(), Fl::event_y(), 80, 1);
-    //menu.add(diff->filename().c_str(), 0, 0, 0, FL_MENU_INACTIVE|FL_MENU_DIVIDER);
-    menu.add("Add\\/edit notes..", 0, AddNotes_CB, (void*)diff);
+    menu.add("Add\\/edit notes..", 0, AddNotes_CB, (void*)dlp);
     menu.popup();
 }
 
@@ -161,6 +182,8 @@ int main()
     win->end();
     win->show();
     win->resizable(tile);
+
+    G_editnotes = new EditNotesDialog();
 
     // Configure diff_browser's popup menu
     diffs_browser->callback(DiffsBrowserPopupMenu_CB);

@@ -48,6 +48,7 @@ int LoadDiffs(string& hash,
     //    |+       ./repo-notes
     //    |..
     //
+    int diff_line_num = 0;
     Diff diff;
     diff.filename("Comments");
     char diff_filename[512];
@@ -61,6 +62,7 @@ int LoadDiffs(string& hash,
             diffs.push_back(diff);
             // Clear diff, set filename, skip leading "b/" prefix if any
             diff.clear();
+            diff_line_num = 0;      // filename becomes line #0
             if (strncmp(diff_filename, "b/", 2)==0) {
                 diff.filename(diff_filename+2);
             } else {
@@ -68,7 +70,7 @@ int LoadDiffs(string& hash,
             }
         }
         // Add lines to diff
-        diff.add_line(lines[i]);
+        diff.add_line(lines[i], ++diff_line_num);   // one based
     }
     // Append last diff
     if (diff.filename() != "") {
@@ -76,4 +78,3 @@ int LoadDiffs(string& hash,
     }
     return 0;
 }
-
