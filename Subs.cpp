@@ -16,6 +16,26 @@ void StripCRLF_SUBS(char *s) {
     if (s) *s = 0;
 }
 
+// Convert a multiline string into vector of separate lines
+void StringToLines_SUBS(string s, vector<string>& lines)
+{
+    size_t i = 0;
+    string line;
+    //DEBUG printf("--- IN '%s'\n", s.c_str());
+    while (1) {
+        i = s.find('\n');                       // find index of \n
+        //DEBUG printf("    find() returned %ld\n", i);
+        if (i == string::npos) break;           // none? done
+        line = s;                               // copy line so we can truncate
+        line.resize(i);                         // truncate at \n
+        //DEBUG printf("OUT: '%s'\n", line.c_str());
+	lines.push_back(line);
+        s = s.substr(i+1, s.size()-(i+1));      // move to next line
+    }
+    //DEBUG printf("OUT: '%s'\n", s.c_str());
+    lines.push_back(s);
+}
+
 // Is dirname a directory?
 bool IsDir_SUBS(const string& dirname) {
     struct stat buf;

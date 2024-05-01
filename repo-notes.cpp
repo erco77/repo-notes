@@ -35,6 +35,7 @@ vector<Diff> G_diffs;   // all diffs for current project
 
 EditNotesDialog *G_editnotes = 0;
 
+// Rebuild the diffs_browser contents from a diffs[] array
 void UpdateDiffsBrowser(vector<Diff>& diffs)
 {
     diffs_browser->clear();
@@ -50,9 +51,10 @@ void UpdateDiffsBrowser(vector<Diff>& diffs)
                                    "@b"      // Use a bold font (adds FL_BOLD to font)
                                    "@l"      // Use a LARGE (24 point) font
                                    "@.";     // Print rest of line, don't look for more '@' signs
-        const char *grn_fmt = "@C60@.";      // green foreground text
-        const char *red_fmt = "@C1@.";       // red foreground text
-        const char *nor_fmt = "@.";          // normal text (no color)
+        const char *grn_fmt   = "@C60@.";    // green foreground text
+        const char *red_fmt   = "@C1@.";     // red foreground text
+        const char *nor_fmt   = "@.";        // normal text (no color)
+        const char *notes_fmt = "@B16@S8@."; // lt blue bg, small text
         filename = string(filename_fmt) + diff.filename();
         diffs_browser->add(filename.c_str());
 
@@ -66,6 +68,22 @@ void UpdateDiffsBrowser(vector<Diff>& diffs)
                 default:  line_str = string(nor_fmt) + line_str; break;
             }
             diffs_browser->add(line_str.c_str(), (void*)&dl);
+
+            // Check to see if this DiffLine has notes.
+            //     If it does, add the notes /below/ the diff line
+            //     and set the bgcolor to something to make it easily identifyable.
+            //
+            if (dl.notes() == "") continue;    // no notes? skip
+            // Split notes into separate lines and add them
+            vector<string> lines;
+            StringToLines_SUBS(dl.notes(), lines);
+            for (size_t i=0; i<lines.size(); i++) {
+                string out = string(notes_fmt)  // add notes prefix '@' formatting 
+                           + string("   ")      // indent
+                           + lines[i];          // content
+                // add formatted line to browser, associated with this dl (DiffLine)
+                diffs_browser->add(out.c_str(), (void*)&dl);
+            }
         }
     }
 }
@@ -147,6 +165,7 @@ void SaveNotes_CB(Fl_Widget *w, void *userdata)
     DiffLine *dlp = (DiffLine*)userdata;
     dlp->notes(G_editnotes->notes());       // get new notes
     G_editnotes->hide();                    // hide dialog
+    UpdateDiffsBrowser(G_diffs);            // update changes
 }
 
 void AddNotes_CB(Fl_Widget *w, void *userdata)
@@ -178,6 +197,8 @@ void DiffsBrowserPopupMenu_CB(Fl_Widget *w, void *userdata)
 
 int main()
 {
+    // Create a custom color used for 'notes'
+    Fl::set_color(16, 0xe0, 0xe6, 0xf2);        // Set Fl_Color(16) to light blue
     Fl_Double_Window *win = make_window("repo-notes");
     win->end();
     win->show();

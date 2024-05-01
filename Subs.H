@@ -9,12 +9,12 @@
 using namespace std;
 
 void StripCRLF_SUBS(char *s);
+void StringToLines_SUBS(string s, vector<string>& lines);
 int LoadCommand_SUBS(const string& command, vector<string>& lines, string& errmsg);
 void Show_SUBS(vector<string>& lines);
 
 bool IsDir_SUBS(const string& dirname);
 string RepoDirname_SUBS(void);
 string CommitFilename_SUBS(const string& commit);
-
 
 #endif
