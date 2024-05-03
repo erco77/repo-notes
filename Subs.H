@@ -15,6 +15,7 @@ void Show_SUBS(vector<string>& lines);
 
 bool IsDir_SUBS(const string& dirname);
 string RepoDirname_SUBS(void);
-string CommitFilename_SUBS(const string& commit);
+string CommitFilename_SUBS(const string& hash);
+string NotesFilename_SUBS(const string& hash, int diff_index, int line_num, bool create);
 
 #endif

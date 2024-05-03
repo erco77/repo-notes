@@ -101,7 +101,7 @@ void UpdateGitLogBrowser(vector<Commit>& commits)
 }
 
 // Update the filename browser with files from commit 'hash'
-void UpdateFilenameBrowser(string& hash, vector<Diff>& diffs)
+void UpdateFilenameBrowser(const string& hash, vector<Diff>& diffs)
 {
     string errmsg;
 
@@ -157,6 +157,42 @@ void YouCantEdit()
              "(Pick one of the diff lines instead)");
 }
 
+// Find the index of the parent Diff for a DiffLine
+//     Each 'Diff' in the G_diffs[] array may contain one or more DiffLine instances,
+//     so "go fish" to find the right one.
+//
+//     TODO: We can probably avoid this linear lookup if we simply save the parent
+//           G_diff[]'s index when the DiffLine instance is created.
+//
+int FindParent(DiffLine *dlp)
+{
+    // Find Diff containing this dlp
+    for (size_t i=0; i<G_diffs.size(); i++) {
+        Diff &diff = G_diffs[i];
+        if (diff.find_diffline(dlp) != -1) return i;  // found
+    }
+    return -1;
+}
+
+void SaveNotes(DiffLine *dlp)
+{
+    // TODO: 1. Find the Diff that contains this dlp,
+    //       2. Use its commit and filename to fopen() notes file for that line#
+    //       3. close, done.
+    //
+
+    // Find Diff containing this dlp
+    int diff_index = FindParent(dlp);
+    if (diff_index < 0)
+        { fl_alert("SaveNotes: dlp not found %p in G_diffs[]\n", dlp); return; }
+
+    // Found, save notes
+    string errmsg;
+    if (G_diffs[diff_index].savenotes(diff_index, dlp, errmsg) < 0) {
+        fl_alert("ERROR: %s\n", errmsg.c_str());
+    }
+}
+
 // When user hits 'Save' in EditNotesDialog
 void SaveNotes_CB(Fl_Widget *w, void *userdata)
 {
@@ -164,13 +200,14 @@ void SaveNotes_CB(Fl_Widget *w, void *userdata)
     dlp->notes(G_editnotes->notes());       // get new notes
     G_editnotes->hide();                    // hide dialog
     UpdateDiffsBrowser(G_diffs);            // update changes
+    SaveNotes(dlp);
 }
 
 void AddNotes_CB(Fl_Widget *w, void *userdata)
 {
     DiffLine *dlp = (DiffLine*)userdata;
     if (!dlp) return YouCantEdit(); 
-    G_editnotes->title(dlp->filename());                  // set dialog window's title
+    G_editnotes->title("");                               // [TODO: Find in parent] set dialog window's title
     G_editnotes->notes(dlp->notes());                     // load editor with previous notes
     G_editnotes->save_callback(SaveNotes_CB, (void*)dlp); // save button cb
     G_editnotes->show();                                  // show dialog

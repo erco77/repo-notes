@@ -6,7 +6,10 @@
 #include <string.h>     // strchr
 #include <unistd.h>
 #include <fcntl.h>
+
 #include <iostream>
+#include <string>
+#include <sstream>      // stringstream
 
 #include "Subs.H"
 
@@ -45,18 +48,47 @@ bool IsDir_SUBS(const string& dirname) {
 }
 
 // Return the ".repo-notes" directory name for the current project
-string RepoDirname_SUBS(void) {
-    string dirname = ".repo-notes";        // XXX: hack; hunt in cwd and parents for .git
-    if (!IsDir_SUBS(dirname)) mkdir(dirname.c_str(), 0777);
+string RepoDirname_SUBS(bool create) {
+    string dirname = ".repo-notes";        // TODO: hunt cwd (and up) for .git dir, and put it there
+    if (create && !IsDir_SUBS(dirname)) mkdir(dirname.c_str(), 0777);
     return dirname;
 }
 
 // Return the notes filename for a particular commit
-string CommitFilename_SUBS(const string& commit) {
-    string filename = RepoDirname_SUBS() + string("/commits");
-    if (!IsDir_SUBS(filename)) mkdir(filename.c_str(), 0777);
-    filename += string("/") + commit;
-    return filename;
+string CommitDirname_SUBS(const string& hash, bool create) {
+    // Create commits dir
+    string dirname = RepoDirname_SUBS(create) + string("/commits");
+    if (create && !IsDir_SUBS(dirname)) { mkdir(dirname.c_str(), 0777); }
+    // Create commit hash dir
+    dirname += string("/") + hash;
+    if (create && !IsDir_SUBS(dirname)) { mkdir(dirname.c_str(), 0777); }
+    // Return path to hash dir
+    return dirname;
+}
+
+// Return the "notes" filename, e.g. .repo-notes/<hash>/notes-<diff_index#>-<line#>.
+//
+//     We use index#s in place of the diff file's filename, because it may
+//     may contain slashes (a directory hierarchy), and there's no reliable way
+//     to flatten that "safely". For instance, trivially replacing '/' with '_'
+//     can create a name collision with two actual file names, e.g.
+//
+//             somedir/file       -- somedir directory contains "file"
+//             somedir_file       -- top level dir contains a file named "somedir_file"
+//
+//     ..if we trivially replace '/' with '_' in all filenames, the above two filenames
+//     both end up being "somedir_file", even though they're separate.
+//            
+string NotesFilename_SUBS(const string& hash,
+                          int   diff_index,      // what we use for <difffile_index#>
+                          int   line_num,        // what we use as the <line#>
+                          bool  create) {        // true: create commit dir, false: don't create dir
+    stringstream ss;
+    ss << CommitDirname_SUBS(hash, create)       // "some/path/.repo-notes/<commit>"
+       << "/notes-" << diff_index                // "some/path/.repo-notes/<commit>/notes-12"
+       << "-"       << line_num                  // "some/path/.repo-notes/<commit>/notes-12-3"
+       << ".txt";                                // "some/path/.repo-notes/<commit>/notes-12-3.txt"
+    return ss.str();
 }
 
 // Run 'command' and return its output in lines[]
