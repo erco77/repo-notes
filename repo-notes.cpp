@@ -73,14 +73,12 @@ void UpdateDiffsBrowser(vector<Diff>& diffs)
             //     If it does, add the notes /below/ the diff line
             //     and set the bgcolor to something to make it easily identifyable.
             //
-            if (dl.notes() == "") continue;    // no notes? skip
-            // Split notes into separate lines and add them
-            vector<string> lines;
-            StringToLines_SUBS(dl.notes(), lines);
-            for (size_t i=0; i<lines.size(); i++) {
+            if (dl.notes_size() == 0) continue; // no notes? skip
+            // Add all lines of the user's notes
+            for (size_t i=0; i<dl.notes_size(); i++) {
                 string out = string(notes_fmt)  // add notes prefix '@' formatting 
                            + string("   ")      // indent
-                           + lines[i];          // content
+                           + dl.notes(i);       // content
                 // add formatted line to browser, associated with this dl (DiffLine)
                 diffs_browser->add(out.c_str(), (void*)&dl);
             }
