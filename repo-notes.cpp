@@ -110,7 +110,12 @@ void UpdateFilenameBrowser(const string& hash, vector<Diff>& diffs)
         fl_alert("ERROR: %s" , errmsg.c_str());
         exit(1);
     }
-
+    // Load notes for this commit
+    cout << "Loading commit notes for hash " << hash << endl;
+    if (LoadCommitNotes(hash, G_diffs, errmsg) < 0) {
+        fl_alert("ERROR: can't load notes for commit %s: %s",
+                 hash.c_str(), errmsg.c_str());
+    }
     // Update browser with filenames from loaded diffs[]
     filename_browser->clear();
     for (size_t i=0; i<diffs.size(); i++ ) {
@@ -121,9 +126,6 @@ void UpdateFilenameBrowser(const string& hash, vector<Diff>& diffs)
         filename_browser->select(1);    // one based!
         filename_browser->do_callback();
     }
-
-    // TODO: Add vector<Note> to Diff, and load any notes files found here
-    //       See the README.txt for design document.
 }
 
 // Someone clicked on a new commit line
@@ -132,12 +134,11 @@ void GitLogBrowser_CB(Fl_Widget*, void*)
     int index   = git_log_browser->value();
     string hash = (index > 0) ? git_log_browser->text(index) : "";
     //DEBUG cout << "log browser picked: '" << hash << "'" << endl;
-
     // Parse hash
     int si = hash.find(' ');
     if (si<=0) return;          // nothing picked
     hash.resize(si);
-
+    // Update filename browser to show this commit
     UpdateFilenameBrowser(hash, G_diffs);
     UpdateDiffsBrowser(G_diffs);
 }

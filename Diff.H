@@ -107,5 +107,6 @@ public:
 };
 
 int LoadDiffs(const string& hash, vector<Diff> &diffs, string& errmsg);
+int LoadCommitNotes(const string& commit_hash, vector<Diff> &diffs, string& errmsg);
 
 #endif

@@ -139,3 +139,21 @@ diff_write_err:
     if (fp) fclose(fp);
     return -1;
 }
+
+// Load all notes files
+int LoadCommitNotes(const string& commit_hash, vector<Diff> &diffs, string& errmsg)
+{
+    // 1. Using Opendir on the commit directory, find all commit hashes
+    // 2. In each commit dir, load all notes files found, apply them to parent's diffs[] arrat
+    // 3. Parent should update the diffs browser with the loaded notes
+    bool create = true;
+    vector<string> files;
+    vector<string> warnings;
+    string dirname = CommitDirname_SUBS(commit_hash, create);
+    // Descend into .repo-notes/commit/ dir looking for notes files
+    if (DescendDir_SUBS(dirname, files, warnings, errmsg) < 0) return -1;
+    for (size_t i=0; i<files.size(); i++) {
+        cout << i << ": " << files[i] << endl;
+    }
+    return 0;
+}

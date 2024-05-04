@@ -10,12 +10,13 @@ using namespace std;
 
 void StripCRLF_SUBS(char *s);
 void StringToLines_SUBS(string s, vector<string>& lines);
-int LoadCommand_SUBS(const string& command, vector<string>& lines, string& errmsg);
+int  LoadCommand_SUBS(const string& command, vector<string>& lines, string& errmsg);
 void Show_SUBS(vector<string>& lines);
 
-bool IsDir_SUBS(const string& dirname);
+bool   IsDir_SUBS(const string& dirname);
 string RepoDirname_SUBS(void);
-string CommitFilename_SUBS(const string& hash);
+string CommitDirname_SUBS(const string& hash, bool create);
 string NotesFilename_SUBS(const string& hash, int diff_index, int line_num, bool create);
+int    DescendDir_SUBS(const string& dirname, vector<string>& files, vector<string>& warnings, string& errmsg);
 
 #endif

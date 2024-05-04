@@ -2,9 +2,11 @@
 
 #include <sys/stat.h>   // mkdir(), etc
 #include <sys/types.h>
+#include <sys/stat.h>   // stat()
+#include <sys/dir.h>    // opendir()
 #include <stdio.h>      // popen
-#include <string.h>     // strchr
 #include <unistd.h>
+#include <string.h>     // strchr
 #include <fcntl.h>
 
 #include <iostream>
@@ -54,7 +56,7 @@ string RepoDirname_SUBS(bool create) {
     return dirname;
 }
 
-// Return the notes filename for a particular commit
+// Return the notes dirname for a particular commit
 string CommitDirname_SUBS(const string& hash, bool create) {
     // Create commits dir
     string dirname = RepoDirname_SUBS(create) + string("/commits");
@@ -118,4 +120,59 @@ void Show_SUBS(vector<string>& lines)
 {
     for (int i=0; i<(int)lines.size(); i++ )
         cout << i << ": " << lines[i] << "\n";
+}
+
+// Descend a directory, accumulate all filenames found in files[]
+//     Returns 0 on success, with found files in files[], and any warnings in warnings[]
+//     On error returns -1 (errmsg has reason)
+//
+int DescendDir_SUBS(const string& dirname,      // dirname to descend
+                    vector<string>& files,      // returned filenames found
+                    vector<string>& warnings,   // warnings (if any) encountered
+                    string& errmsg)             // errmsg if return is -1
+{
+    DIR *dirp;
+    struct stat buf;
+    struct direct *dp;
+    string pathname;
+    // Open dir
+    if ((dirp = opendir(dirname.c_str()))==NULL) {
+        errmsg = string("opendir(") + dirname
+               + string("): ") + string(strerror(errno));
+        return -1;
+    }
+    // Read all dir entries in this dir
+    while ((dp = readdir(dirp)) != NULL) {
+	// Skip . and .. to avoid endless recurse
+	if (strcmp(dp->d_name,"." )==0) continue;
+	if (strcmp(dp->d_name,"..")==0) continue;
+        // Build pathname for each dir entry encountered
+        pathname = dirname + "/" + string(dp->d_name);
+        // Stat entry to see what it is
+	if (stat(pathname.c_str(), &buf)==EOF) {
+            string warning = string("stat(") + pathname + "): " + string(strerror(errno));
+            warnings.push_back(warning);
+	} else {
+	    if (buf.st_mode & S_IFDIR) {
+                // Dir? Recurse into it
+                printf("FOUND SUBDIR: %s\n", pathname.c_str());
+                if ( DescendDir_SUBS(pathname.c_str(), files, warnings, errmsg) < 0) {
+                    // Close dir and return up the recursion hierarchy
+                    closedir(dirp);
+                    return -1;
+                }
+            } else {
+                // Not a dir? It's a file, add to files[]
+                printf("FOUND FILE: %s\n", pathname.c_str());
+                files.push_back(pathname);
+            }
+        }
+    }
+    // Clean up, done
+    if (closedir(dirp) < 0) {
+        errmsg = string("closedir(") + dirname
+               + string("): ") + string(strerror(errno));
+        return -1;
+    }
+    return 0;
 }
