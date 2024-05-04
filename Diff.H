@@ -14,24 +14,20 @@ using namespace std;
 
 // A single line in the diffs
 class DiffLine {
-//x string hash_;          // commit hash for this diff
-//x string filename_;      // filename for this diff
+    size_t diff_index_;    // parent Diff's index in G_diffs[]
     int    line_num_;      // line number from top of diff file
     string line_str_;      // line contents
     vector<string> notes_; // user notes
 
 public:
-    DiffLine()  { line_num_ = -1; }
+    DiffLine() {
+        diff_index_ = -1;
+        line_num_ = -1;
+    }
     ~DiffLine() { }
 
-//x // Set/get diff filename
-//x void hash(const char* val)       { hash_ = val; }
-//x void hash(const string& val)     { hash_ = val; }
-//x string hash() const              { return hash_; }
-//x
-//x void filename(const char* val)   { filename_ = val; }
-//x void filename(const string& val) { filename_ = val; }
-//x string filename() const          { return filename_; }
+    void   diff_index(size_t val)    { diff_index_ = val; }
+    size_t diff_index(void) const    { return diff_index_; }
 
     void line_num(int val)           { line_num_ = val;  }
     int  line_num() const            { return line_num_; }
@@ -65,12 +61,16 @@ public:
 // Diff - A single file's diffs
 //
 class Diff {
+    size_t diff_index_;                 // G_diffs[] index
     string hash_;                       // hash for this diff
     string filename_;                   // filename for this diff
     vector<DiffLine> diff_lines_;       // lines of diff
 public:
-    Diff()  { }
+    Diff() { diff_index_ = -1; }
     ~Diff() { }
+
+    void diff_index(size_t val)    { diff_index_ = val; }
+    size_t  diff_index(void) const { return diff_index_; }
 
     void hash(const char* val)     { hash_ = val; }
     void hash(const string& val)   { hash_ = val; }
@@ -82,26 +82,17 @@ public:
     string filename() const        { return filename_; }
 
     // Add a diff line
+    //    NOTE: Assumes diff_index() is valid
+    //
     void add_line(const string &val, int line_num) {
         DiffLine dl;
-//x       dl.hash(hash());
-//x       dl.filename(filename());        // XXX: needless copy
+        dl.diff_index(diff_index());       // pass Diff's G_diffs[] index to DiffLine
         dl.line_str(val);
         dl.line_num(line_num);
         diff_lines_.push_back(dl);
     }
     void add_line(const char* val, int line_num) {
         add_line(string(val), line_num);
-    }
-
-    // Return index of DiffLine in this diff, or -1 if not found
-    int find_diffline(DiffLine *dlp) {
-        for (size_t i=0; i<diff_lines_.size(); i++) {
-            if ( dlp == &diff_lines_[i]) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     // Get total diff lines
@@ -112,7 +103,7 @@ public:
 
     // Clear class
     void clear(void) { filename(""); diff_lines_.clear(); }
-    int savenotes(int diff_index, DiffLine *dlp, string& errmsg);
+    int savenotes(DiffLine *dlp, string& errmsg);
 };
 
 int LoadDiffs(const string& hash, vector<Diff> &diffs, string& errmsg);

@@ -22,6 +22,8 @@ class EditNotesDialog : public Fl_Double_Window {
 public:
     EditNotesDialog(int W=900,int H=400,const char* L=0) : Fl_Double_Window(W,H,L) {
         edit_ = new Fl_Text_Editor(0,0,W,H-35);
+        edit_->textfont(FL_COURIER);
+        edit_->textsize(12);
         buff_ = new Fl_Text_Buffer();
         edit_->buffer(buff_);
         save_ = new Fl_Button(W-110,H-30,100,25,"Save");
