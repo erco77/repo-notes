@@ -160,30 +160,10 @@ diff_write_err:
     return -1;
 }
 
-// Find line_num in diff_lines[] and return index, or -1 on error
-int Diff::find_line_num(int line_num, string& errmsg)
-{
-    // TODO: Do we need a linear lookup? Or is line# the index#
-    for (size_t i=0; i<diff_lines_.size(); i++)
-        if (diff_lines_[i].line_num() == line_num)
-            return i;
-    // Not found? fail..
-    stringstream ss;
-    ss << "Diff file " << filename() << ": couldn't find line_num " << line_num << " in diff_lines[]";
-    errmsg = ss.str();
-    return -1;
-}
-
 // Load notes from specified file
 int Diff::loadnotes(const string& filename, int diff_index, int line_num, string& errmsg)
 {
-    // Find index into diff_lines_[] for specified line#
-    size_t dli = find_line_num(line_num, errmsg);
-    if (dli < 0) return -1;
-    DiffLine &dl = diff_lines_[dli];
-    cout << "DEBUG: Applying " << filename << " to diff file "
-         << this->filename() << ", line_num " << line_num << endl;
-
+    DiffLine &dl = diff_lines_[line_num-1];   // index is (line_num-1)
     // Open notes file
     ifstream ifs(filename);
     if (!ifs) {
@@ -258,11 +238,12 @@ int LoadNote(const string& filename, const string& commit_hash, vector<Diff> &di
 int LoadCommitNotes(const string& commit_hash, vector<Diff> &diffs, string& errmsg)
 {
     errmsg = "";
-    bool create = true;
+    bool create = false;    // don't create commit dirs
     vector<string> files;
     vector<string> warnings;
     // Find all notes files in ".repo-notes/<commit>/" dir
     string dirname = CommitDirname_SUBS(commit_hash, create);
+    if (!IsDir_SUBS(dirname)) return 0;     // no commit dir? skip
     if (DescendDir_SUBS(dirname, files, warnings, errmsg) < 0) return -1;
     // Load all the notes files and apply them
     string emsg;

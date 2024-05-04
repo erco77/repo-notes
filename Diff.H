@@ -104,7 +104,6 @@ public:
     void clear(void) { filename(""); diff_lines_.clear(); }
     int savenotes(DiffLine *dlp, string& errmsg);
     int loadnotes(const string& filename, int diff_index, int line_num, string& errmsg);
-    int find_line_num(int line_num, string& errmsg);
 };
 
 int LoadDiffs(const string& commit_hash, vector<Diff> &diffs, string& errmsg);
