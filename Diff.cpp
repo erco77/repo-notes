@@ -11,22 +11,23 @@
 #include <string>
 #include <vector>
 #include <sstream>      // stringstream
-#include <iostream>
+#include <iostream>     // cout debugging
+#include <fstream>
 
-// Load all diffs for the specified hash.
+// Load all diffs for the specified commit_hash.
 //
 // Returns:
 //    0 on success, commits[] loaded
 //   -1 on error (errmsg has reason)
 //
-int LoadDiffs(const string& hash, vector<Diff> &diffs, string& errmsg)
+int LoadDiffs(const string& commit_hash, vector<Diff> &diffs, string& errmsg)
 {
     // Clear previous diffs first
     diffs.clear();
     // Load all diffs for this commit
     vector<string> lines;
-    //DEBUG cout << "Loading diffs from hash " << hash << ": ";
-    if (LoadCommand_SUBS(string("git show -U10000 ") + hash, lines, errmsg) < 0) {
+    //DEBUG cout << "Loading diffs from commit hash " << commit_hash << ": ";
+    if (LoadCommand_SUBS(string("git show -U10000 ") + commit_hash, lines, errmsg) < 0) {
         return -1;
     }
     //DEBUG cout << lines.size() << " loaded." << endl;
@@ -54,7 +55,7 @@ int LoadDiffs(const string& hash, vector<Diff> &diffs, string& errmsg)
     //
     int diff_line_num = 0;
     Diff diff;
-    diff.hash(hash);
+    diff.commit_hash(commit_hash);
     diff.filename("Comments");
     char diff_filename[512];
     for (int i=0; i<(int)lines.size(); i++) {
@@ -65,10 +66,10 @@ int LoadDiffs(const string& hash, vector<Diff> &diffs, string& errmsg)
             //DEBUG cout << "--- DIFF FILENAME: " << diff_filename << endl;
             // Save previous diff first
             diffs.push_back(diff);
-            diffs.back().diff_index(diffs.size());     // set diff_index now that we know it
+            diffs.back().diff_index(diffs.size()-1);   // set diff_index now that we know it
             // Clear diff, set filename, skip leading "b/" prefix if any
             diff.clear();
-            diff.diff_index(diffs.size()+1);           // index will be 'next'  // I YAM HERE!!
+            diff.diff_index(diffs.size());             // index will be 'next'
             diff_line_num = 0;                         // filename becomes line #0
             if (strncmp(diff_filename, "b/", 2)==0) {
                 diff.filename(diff_filename+2);
@@ -101,6 +102,25 @@ dl_write_err:
     return -1;
 }
 
+// Load notes from specified file
+int DiffLine::loadnotes(ifstream &ifs, string& errmsg)
+{
+    string s;
+    notes_.clear();
+    while (getline(ifs, s)) {
+        StripLeadingWhite_SUBS(s);             // strip leading whitespace
+        if (s.find("line_num: " ) != string::npos) continue; // ignore
+        if (s.find("notes: ") != string::npos) {
+            notes_.push_back(s.substr(strlen("notes: ")));
+            continue;
+        }
+        if (s == "}") return 0;                // DiffLine section ends? done
+        errmsg = string("unknown command '") + s + string("'");
+        return -1;
+    }
+    return 0;
+}
+
 // Save notes for a specified dlp
 int Diff::savenotes(DiffLine *dlp,          // DiffLine we're saving
                     string& errmsg)         // if we return -1, this has the error message 
@@ -109,7 +129,7 @@ int Diff::savenotes(DiffLine *dlp,          // DiffLine we're saving
     int indent = 0;
     const bool create     = true;           // ensures the directory hierarchy will exist
     int        line_num   = dlp->line_num();
-    string notes_filename = NotesFilename_SUBS(hash(), diff_index(), line_num, create);  // creates dirs
+    string notes_filename = NotesFilename_SUBS(commit_hash(), diff_index(), line_num, create);  // creates dirs
 
     // Create the notes file, save the notes
     cout << "DEBUG: fopen(" << notes_filename << ") for write" << endl;
@@ -119,9 +139,9 @@ int Diff::savenotes(DiffLine *dlp,          // DiffLine we're saving
         goto diff_write_err;
     }
     // Save the parent Diff class's contents to a file so it's associated with the note.
-    if (fprintf(fp, "%*sdiff_index: %ld\n", indent, "",       diff_index()) < 0) goto diff_write_err;
-    if (fprintf(fp, "%*shash:       %s\n",  indent, "",     hash().c_str()) < 0) goto diff_write_err;
-    if (fprintf(fp, "%*sfilename:   %s\n",  indent, "", filename().c_str()) < 0) goto diff_write_err;
+    if (fprintf(fp, "%*sdiff_index:  %ld\n", indent, "",          diff_index()) < 0) goto diff_write_err;
+    if (fprintf(fp, "%*scommit_hash: %s\n",  indent, "", commit_hash().c_str()) < 0) goto diff_write_err;
+    if (fprintf(fp, "%*sfilename:    %s\n",  indent, "", filename().c_str()   ) < 0) goto diff_write_err;
 
     // Save the DiffLine class associated with this note
     if (fprintf(fp, "%*sdiffline {\n", indent, "") < 0) goto diff_write_err;
@@ -140,20 +160,122 @@ diff_write_err:
     return -1;
 }
 
-// Load all notes files
-int LoadCommitNotes(const string& commit_hash, vector<Diff> &diffs, string& errmsg)
+// Find line_num in diff_lines[] and return index, or -1 on error
+int Diff::find_line_num(int line_num, string& errmsg)
 {
-    // 1. Using Opendir on the commit directory, find all commit hashes
-    // 2. In each commit dir, load all notes files found, apply them to parent's diffs[] arrat
-    // 3. Parent should update the diffs browser with the loaded notes
-    bool create = true;
-    vector<string> files;
-    vector<string> warnings;
-    string dirname = CommitDirname_SUBS(commit_hash, create);
-    // Descend into .repo-notes/commit/ dir looking for notes files
-    if (DescendDir_SUBS(dirname, files, warnings, errmsg) < 0) return -1;
-    for (size_t i=0; i<files.size(); i++) {
-        cout << i << ": " << files[i] << endl;
+    // TODO: Do we need a linear lookup? Or is line# the index#
+    for (size_t i=0; i<diff_lines_.size(); i++)
+        if (diff_lines_[i].line_num() == line_num)
+            return i;
+    // Not found? fail..
+    stringstream ss;
+    ss << "Diff file " << filename() << ": couldn't find line_num " << line_num << " in diff_lines[]";
+    errmsg = ss.str();
+    return -1;
+}
+
+// Load notes from specified file
+int Diff::loadnotes(const string& filename, int diff_index, int line_num, string& errmsg)
+{
+    // Find index into diff_lines_[] for specified line#
+    size_t dli = find_line_num(line_num, errmsg);
+    if (dli < 0) return -1;
+    DiffLine &dl = diff_lines_[dli];
+    cout << "DEBUG: Applying " << filename << " to diff file "
+         << this->filename() << ", line_num " << line_num << endl;
+
+    // Open notes file
+    ifstream ifs(filename);
+    if (!ifs) {
+        errmsg += filename + string(": ") + strerror(errno);
+        return -1;
+    }
+
+    // Parse all lines in file
+    //     Note: most of the Diff commands in this context are informational,
+    //           so we just ignore them. We just want to load the DiffLine's notes.
+    string s;
+    while (getline(ifs, s)) {
+        StripLeadingWhite_SUBS(s);                    // strip leading whitespace
+        if (s == "") continue;                        // ignore blank lines
+        if (s.find("diff_index: " ) != string::npos) continue; // ignore
+        if (s.find("commit_hash: ") != string::npos) continue; // ignore
+        if (s.find("filename: "   ) != string::npos) continue; // ignore
+        if (s.find("diffline {"   ) != string::npos) {
+            if (dl.loadnotes(ifs, errmsg) < 0) {
+                string prefix = filename + string(": ");
+                errmsg.insert(0, prefix);
+                return -1;
+            }
+            continue;
+        }
+        errmsg = filename + string(": unknown command '") + s + string("'");
+        return -1;
     }
     return 0;
 }
+
+// Return the diff_index from the notes filename
+// Example: .repo-notes/commits/f5a4b4b/notes-3-4.txt
+//                              commit        | |
+//                                            | line#
+//                                            |
+//                                            diff_index
+int GetDiffIndexAndLineNum(const string& filename,
+                           int& diff_index,
+                           int& line_num,
+                           string& errmsg)
+{
+    int i = filename.find("/notes-");
+    if (i >= 0) {
+        string notes = filename.substr(i+1);    // get "notes-##-##.txt"
+        if (sscanf(notes.c_str(), "notes-%d-%d.txt", &diff_index, &line_num) == 2) {
+            return 0;       // success
+        }
+    }
+    errmsg += string("In filename '") + filename 
+            + string("': can't parse diff_index + line_num integers");
+    return -1;
+}
+
+// Load a single note file, apply to diffs[] array
+int LoadNote(const string& filename, const string& commit_hash, vector<Diff> &diffs, string& errmsg)
+{
+    // Parse diffs[] index# and diff line# from filename
+    int diff_index = -1;
+    int line_num   = -1;
+    if (GetDiffIndexAndLineNum(filename, diff_index, line_num, errmsg) < 0) return -1;
+
+    // Diff instance loads notes file
+    if (diffs[diff_index].loadnotes(filename, diff_index, line_num, errmsg) < 0) return -1;
+    return 0;
+}
+
+// Load notes files
+//     Assumes G_diffs[] already populated with all the diffs for this commit,
+//     and we just load the notes files we find and apply them to G_diffs[].
+//
+int LoadCommitNotes(const string& commit_hash, vector<Diff> &diffs, string& errmsg)
+{
+    errmsg = "";
+    bool create = true;
+    vector<string> files;
+    vector<string> warnings;
+    // Find all notes files in ".repo-notes/<commit>/" dir
+    string dirname = CommitDirname_SUBS(commit_hash, create);
+    if (DescendDir_SUBS(dirname, files, warnings, errmsg) < 0) return -1;
+    // Load all the notes files and apply them
+    string emsg;
+    for (size_t i=0; i<files.size(); i++) {
+        cout << "--- Loading notes file: " << files[i] << endl;
+        if (LoadNote(files[i], commit_hash, diffs, emsg) < 0) {
+            // accumulate error messages (if any) and report them last
+            errmsg += emsg + string("\n");
+        }
+    }
+    return errmsg == "" ? 0 : -1;
+}
+
+// for (const auto &file : files) {
+//     cout << file << endl;
+// }

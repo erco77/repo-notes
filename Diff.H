@@ -10,8 +10,6 @@
 
 using namespace std;
 
-// TODO: Remove hash and filename from DiffLine
-
 // A single line in the diffs
 class DiffLine {
     size_t diff_index_;    // parent Diff's index in G_diffs[]
@@ -55,6 +53,7 @@ public:
         return out;
     }
     int savenotes(FILE *fp, int indent, string& errmsg);
+    int loadnotes(ifstream &ifs, string& errmsg);
 };
 
 //
@@ -62,7 +61,7 @@ public:
 //
 class Diff {
     size_t diff_index_;                 // G_diffs[] index
-    string hash_;                       // hash for this diff
+    string commit_hash_;                // commit hash for this diff
     string filename_;                   // filename for this diff
     vector<DiffLine> diff_lines_;       // lines of diff
 public:
@@ -72,9 +71,9 @@ public:
     void diff_index(size_t val)    { diff_index_ = val; }
     size_t  diff_index(void) const { return diff_index_; }
 
-    void hash(const char* val)     { hash_ = val; }
-    void hash(const string& val)   { hash_ = val; }
-    string hash() const            { return hash_; }
+    void commit_hash(const char* val)   { commit_hash_ = val; }
+    void commit_hash(const string& val) { commit_hash_ = val; }
+    string commit_hash() const          { return commit_hash_; }
 
     // Set/get diff filename
     void filename(const char* val) { filename_ = val; }
@@ -104,9 +103,11 @@ public:
     // Clear class
     void clear(void) { filename(""); diff_lines_.clear(); }
     int savenotes(DiffLine *dlp, string& errmsg);
+    int loadnotes(const string& filename, int diff_index, int line_num, string& errmsg);
+    int find_line_num(int line_num, string& errmsg);
 };
 
-int LoadDiffs(const string& hash, vector<Diff> &diffs, string& errmsg);
+int LoadDiffs(const string& commit_hash, vector<Diff> &diffs, string& errmsg);
 int LoadCommitNotes(const string& commit_hash, vector<Diff> &diffs, string& errmsg);
 
 #endif

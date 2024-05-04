@@ -100,21 +100,21 @@ void UpdateGitLogBrowser(vector<Commit>& commits)
     }
 }
 
-// Update the filename browser with files from commit 'hash'
-void UpdateFilenameBrowser(const string& hash, vector<Diff>& diffs)
+// Update the filename browser with files from commit 'commit_hash'
+void UpdateFilenameBrowser(const string& commit_hash, vector<Diff>& diffs)
 {
     // Load diffs for first commit (if any)
     string errmsg;
     diffs.clear();      // clear any previous first
-    if (LoadDiffs(hash, diffs, errmsg) < 0) {
+    if (LoadDiffs(commit_hash, diffs, errmsg) < 0) {
         fl_alert("ERROR: %s" , errmsg.c_str());
         exit(1);
     }
     // Load notes for this commit
-    cout << "Loading commit notes for hash " << hash << endl;
-    if (LoadCommitNotes(hash, G_diffs, errmsg) < 0) {
+    cout << "Loading commit notes for commit hash " << commit_hash << endl;
+    if (LoadCommitNotes(commit_hash, G_diffs, errmsg) < 0) {
         fl_alert("ERROR: can't load notes for commit %s: %s",
-                 hash.c_str(), errmsg.c_str());
+                 commit_hash.c_str(), errmsg.c_str());
     }
     // Update browser with filenames from loaded diffs[]
     filename_browser->clear();
@@ -131,15 +131,15 @@ void UpdateFilenameBrowser(const string& hash, vector<Diff>& diffs)
 // Someone clicked on a new commit line
 void GitLogBrowser_CB(Fl_Widget*, void*)
 {
-    int index   = git_log_browser->value();
-    string hash = (index > 0) ? git_log_browser->text(index) : "";
-    //DEBUG cout << "log browser picked: '" << hash << "'" << endl;
-    // Parse hash
-    int si = hash.find(' ');
-    if (si<=0) return;          // nothing picked
-    hash.resize(si);
+    int index          = git_log_browser->value();
+    string commit_hash = (index > 0) ? git_log_browser->text(index) : "";
+    //DEBUG cout << "log browser picked: '" << commit_hash << "'" << endl;
+    // Parse commit hash
+    int si = commit_hash.find(' ');
+    if (si <= 0) return;        // nothing picked
+    commit_hash.resize(si);
     // Update filename browser to show this commit
-    UpdateFilenameBrowser(hash, G_diffs);
+    UpdateFilenameBrowser(commit_hash, G_diffs);
     UpdateDiffsBrowser(G_diffs);
 }
 

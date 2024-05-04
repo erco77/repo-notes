@@ -27,7 +27,7 @@ Commit.o: Commit.cpp Commit.H
 Diff.o: Diff.cpp Diff.H
 	$(CXX) $(CXXFLAGS) Diff.cpp -c
 
-repo-notes: repo-notes.cpp MainWindow.o Commit.o Subs.o Diff.o
+repo-notes: repo-notes.cpp MainWindow.o Commit.o Diff.o Subs.o
 	$(CXX) $(CXXFLAGS) \
 	    repo-notes.cpp \
 	    Subs.o \

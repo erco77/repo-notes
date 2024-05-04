@@ -22,14 +22,14 @@ int LoadCommits(vector<Commit>& commits, string& errmsg)
     if (LoadCommand_SUBS(string("git log --oneline"), lines, errmsg) < 0) {
         return -1;
     }
-    char hash[100];
+    char commit_hash[100];
     char comment[1000];
     Commit commit;
     for (int i=0; i<(int)lines.size(); i++ ) {
         string line = lines[i] + "\n";          // need trailing "\n" for sscanf()
         const char *s = line.c_str();
-        if (sscanf(s, "%99s %999[^\n]", hash, comment) == 2) {
-            commit.hash(hash);
+        if (sscanf(s, "%99s %999[^\n]", commit_hash, comment) == 2) {
+            commit.commit_hash(commit_hash);
             commit.comment(comment);
             commits.push_back(commit);
         }

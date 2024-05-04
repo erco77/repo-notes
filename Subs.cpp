@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>      // stringstream
+#include <regex>        // regex_replace.. (note: this really slows down g++!)
 
 #include "Subs.H"
 
@@ -57,18 +58,18 @@ string RepoDirname_SUBS(bool create) {
 }
 
 // Return the notes dirname for a particular commit
-string CommitDirname_SUBS(const string& hash, bool create) {
+string CommitDirname_SUBS(const string& commit_hash, bool create) {
     // Create commits dir
     string dirname = RepoDirname_SUBS(create) + string("/commits");
     if (create && !IsDir_SUBS(dirname)) { mkdir(dirname.c_str(), 0777); }
     // Create commit hash dir
-    dirname += string("/") + hash;
+    dirname += string("/") + commit_hash;
     if (create && !IsDir_SUBS(dirname)) { mkdir(dirname.c_str(), 0777); }
-    // Return path to hash dir
+    // Return path to commit hash dir
     return dirname;
 }
 
-// Return the "notes" filename, e.g. .repo-notes/<hash>/notes-<diff_index#>-<line#>.
+// Return the "notes" filename, e.g. .repo-notes/<commit_hash>/notes-<diff_index#>-<line#>.
 //
 //     We use index#s in place of the diff file's filename, because it may
 //     may contain slashes (a directory hierarchy), and there's no reliable way
@@ -81,15 +82,15 @@ string CommitDirname_SUBS(const string& hash, bool create) {
 //     ..if we trivially replace '/' with '_' in all filenames, the above two filenames
 //     both end up being "somedir_file", even though they're separate.
 //            
-string NotesFilename_SUBS(const string& hash,
-                          int   diff_index,      // what we use for <difffile_index#>
-                          int   line_num,        // what we use as the <line#>
-                          bool  create) {        // true: create commit dir, false: don't create dir
+string NotesFilename_SUBS(const string& commit_hash,
+                          int   diff_index,       // what we use for <difffile_index#>
+                          int   line_num,         // what we use as the <line#>
+                          bool  create) {         // true: create commit dir, false: don't create dir
     stringstream ss;
-    ss << CommitDirname_SUBS(hash, create)       // "some/path/.repo-notes/<commit>"
-       << "/notes-" << diff_index                // "some/path/.repo-notes/<commit>/notes-12"
-       << "-"       << line_num                  // "some/path/.repo-notes/<commit>/notes-12-3"
-       << ".txt";                                // "some/path/.repo-notes/<commit>/notes-12-3.txt"
+    ss << CommitDirname_SUBS(commit_hash, create) // "some/path/.repo-notes/<commit>"
+       << "/notes-" << diff_index                 // "some/path/.repo-notes/<commit>/notes-12"
+       << "-"       << line_num                   // "some/path/.repo-notes/<commit>/notes-12-3"
+       << ".txt";                                 // "some/path/.repo-notes/<commit>/notes-12-3.txt"
     return ss.str();
 }
 
@@ -175,4 +176,10 @@ int DescendDir_SUBS(const string& dirname,      // dirname to descend
         return -1;
     }
     return 0;
+}
+
+// Remove leading whitespace from string 's'
+void StripLeadingWhite_SUBS(string& s)
+{
+    s = regex_replace(s, regex("^[ \t]*"), "");
 }
