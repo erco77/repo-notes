@@ -52,7 +52,7 @@ public:
         }
         return out;
     }
-    int save_notes(FILE *fp, int indent, string& errmsg);
+    int save_notes(ofstream& ofs, int indent, string& errmsg);
     int load_notes(ifstream &ifs, string& errmsg);
 };
 

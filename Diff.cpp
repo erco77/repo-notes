@@ -4,7 +4,7 @@
 #include "Diff.H"
 
 #include <string.h>     // strncmp
-#include <stdio.h>      // fopen..
+#include <stdio.h>
 #include <errno.h>      // errno..
 #include <string.h>     // strerror..
 
@@ -13,6 +13,7 @@
 #include <sstream>      // stringstream
 #include <iostream>     // cout debugging
 #include <fstream>
+#include <iomanip>      // setw
 
 // Load all diffs for the specified commit_hash.
 //
@@ -87,21 +88,20 @@ int LoadDiffs(const string& commit_hash, vector<Diff> &diffs, string& errmsg)
     return 0;
 }
 
-int WriteError(string& errmsg)
+// Put "<filename>: write error: <system_errmsg>" into errmsg, return -1
+int FileWriteError(const string& filename, string& errmsg)
 {
-    errmsg = string("write error: ") + string(strerror(errno));
+    errmsg = filename + string(": write error: ") + string(strerror(errno));
     return -1;
 }
 
 // Save DiffLine class's notes to a file
-int DiffLine::save_notes(FILE *fp, int indent, string& errmsg)
+int DiffLine::save_notes(ofstream& ofs, int indent, string& errmsg)
 {
-    if (fprintf(fp, "%*sline_num: %d\n", indent, "", line_num_) < 0)
-        return WriteError(errmsg);
+    ofs << setw(indent) << "" << "line_num: " << line_num() << "\n";
     for (size_t i=0; i<notes_.size(); i++)
-        if (fprintf(fp, "%*snotes: %s\n", indent, "", notes_[i].c_str()) < 0)
-            return WriteError(errmsg);
-    return 0;
+        ofs << setw(indent) << "" << "   notes: " << notes(i) << "\n";
+    return ofs.fail() ? -1 : 0;
 }
 
 // Load notes from specified file
@@ -129,37 +129,28 @@ int Diff::save_notes(DiffLine *dlp,         // DiffLine we're saving
 {
     // Create notes filename
     int indent = 0;
-    const bool create     = true;           // ensures the directory hierarchy will exist
-    int        line_num   = dlp->line_num();
-    string notes_filename = NotesFilename_SUBS(commit_hash(), diff_index(), line_num, create);  // creates dirs
+    const bool create   = true;           // ensures the directory hierarchy will exist
+    int        line_num = dlp->line_num();
+    string     filename = NotesFilename_SUBS(commit_hash(), diff_index(), line_num, create);  // creates dirs
 
     // Create the notes file, save the notes
-    cout << "DEBUG: fopen(" << notes_filename << ") for write" << endl;
-    FILE *fp = fopen(notes_filename.c_str(), "w");
-    if (fp == NULL) {
-        errmsg = string("can't create file: ") + string(strerror(errno));
-        goto diff_write_err;
-    }
+    ofstream ofs(filename);
+    if (!ofs) return FileWriteError(filename, errmsg);
     // Save the parent Diff class's contents to a file so it's associated with the note.
-    if (fprintf(fp, "%*sdiff_index:  %ld\n", indent, "",          diff_index()) < 0) goto diff_write_err;
-    if (fprintf(fp, "%*scommit_hash: %s\n",  indent, "", commit_hash().c_str()) < 0) goto diff_write_err;
-    if (fprintf(fp, "%*sfilename:    %s\n",  indent, "", filename().c_str()   ) < 0) goto diff_write_err;
-
-    // Save the DiffLine class associated with this note
-    if (fprintf(fp, "%*sdiffline {\n", indent, "") < 0) goto diff_write_err;
+    ofs << setw(indent) << "" << "diff_index:  " << diff_index()     << "\n"
+        << setw(indent) << "" << "commit_hash: " << commit_hash()    << "\n"
+        << setw(indent) << "" << "filename:    " << this->filename() << "\n"
+        << setw(indent) << "" << "diffline {\n";
+    if (ofs.fail()) return FileWriteError(filename, errmsg);
     indent += 4;
-    if (dlp->save_notes(fp, indent, errmsg) < 0) goto diff_write_err;
+    // Save the DiffLine class associated with this note
+    if (dlp->save_notes(ofs, indent, errmsg) < 0)
+        return FileWriteError(filename, errmsg);
     indent -= 4;
-    if (fprintf(fp, "%*s}\n", indent, "") < 0) goto diff_write_err;
-    fclose(fp);
+    ofs << setw(indent) << "" << "}\n";
+    if (ofs.fail()) return FileWriteError(filename, errmsg);
+    ofs.close();
     return 0;
-
-diff_write_err:
-    stringstream ss;
-    ss << "Diff::save_notes(): '" << notes_filename << "': " << errmsg;
-    errmsg = ss.str();
-    if (fp) fclose(fp);
-    return -1;
 }
 
 // Load notes from specified file
