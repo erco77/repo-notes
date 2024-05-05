@@ -52,8 +52,8 @@ public:
         }
         return out;
     }
-    int savenotes(FILE *fp, int indent, string& errmsg);
-    int loadnotes(ifstream &ifs, string& errmsg);
+    int save_notes(FILE *fp, int indent, string& errmsg);
+    int load_notes(ifstream &ifs, string& errmsg);
 };
 
 //
@@ -90,9 +90,6 @@ public:
         dl.line_num(line_num);
         diff_lines_.push_back(dl);
     }
-    void add_line(const char* val, int line_num) {
-        add_line(string(val), line_num);
-    }
 
     // Get total diff lines
     size_t diff_lines(void) const { return diff_lines_.size(); }
@@ -102,8 +99,8 @@ public:
 
     // Clear class
     void clear(void) { filename(""); diff_lines_.clear(); }
-    int savenotes(DiffLine *dlp, string& errmsg);
-    int loadnotes(const string& filename, int diff_index, int line_num, string& errmsg);
+    int save_notes(DiffLine *dlp, string& errmsg);
+    int load_notes(const string& filename, int diff_index, int line_num, string& errmsg);
 };
 
 int LoadDiffs(const string& commit_hash, vector<Diff> &diffs, string& errmsg);

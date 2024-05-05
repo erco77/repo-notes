@@ -87,34 +87,36 @@ int LoadDiffs(const string& commit_hash, vector<Diff> &diffs, string& errmsg)
     return 0;
 }
 
-
-// Save DiffLine class's notes to a file
-int DiffLine::savenotes(FILE *fp, int indent, string& errmsg)
+int WriteError(string& errmsg)
 {
-    if (fprintf(fp, "%*sline_num: %d\n", indent, "", line_num_) < 0) goto dl_write_err;
-    for (size_t i=0; i<notes_.size(); i++) {
-        if (fprintf(fp, "%*snotes: %s\n", indent, "", notes_[i].c_str()) < 0) goto dl_write_err;
-    }
-    return 0;
-
-dl_write_err:
     errmsg = string("write error: ") + string(strerror(errno));
     return -1;
 }
 
+// Save DiffLine class's notes to a file
+int DiffLine::save_notes(FILE *fp, int indent, string& errmsg)
+{
+    if (fprintf(fp, "%*sline_num: %d\n", indent, "", line_num_) < 0)
+        return WriteError(errmsg);
+    for (size_t i=0; i<notes_.size(); i++)
+        if (fprintf(fp, "%*snotes: %s\n", indent, "", notes_[i].c_str()) < 0)
+            return WriteError(errmsg);
+    return 0;
+}
+
 // Load notes from specified file
-int DiffLine::loadnotes(ifstream &ifs, string& errmsg)
+int DiffLine::load_notes(ifstream &ifs, string& errmsg)
 {
     string s;
     notes_.clear();
     while (getline(ifs, s)) {
-        StripLeadingWhite_SUBS(s);             // strip leading whitespace
+        StripLeadingWhite_SUBS(s);          // strip leading whitespace
         if (s.find("line_num: " ) != string::npos) continue; // ignore
         if (s.find("notes: ") != string::npos) {
             notes_.push_back(s.substr(strlen("notes: ")));
             continue;
         }
-        if (s == "}") return 0;                // DiffLine section ends? done
+        if (s == "}") return 0;             // DiffLine section ends? done
         errmsg = string("unknown command '") + s + string("'");
         return -1;
     }
@@ -122,8 +124,8 @@ int DiffLine::loadnotes(ifstream &ifs, string& errmsg)
 }
 
 // Save notes for a specified dlp
-int Diff::savenotes(DiffLine *dlp,          // DiffLine we're saving
-                    string& errmsg)         // if we return -1, this has the error message 
+int Diff::save_notes(DiffLine *dlp,         // DiffLine we're saving
+                     string& errmsg)        // if we return -1, this has the error message 
 {
     // Create notes filename
     int indent = 0;
@@ -146,7 +148,7 @@ int Diff::savenotes(DiffLine *dlp,          // DiffLine we're saving
     // Save the DiffLine class associated with this note
     if (fprintf(fp, "%*sdiffline {\n", indent, "") < 0) goto diff_write_err;
     indent += 4;
-    if (dlp->savenotes(fp, indent, errmsg) < 0) goto diff_write_err;
+    if (dlp->save_notes(fp, indent, errmsg) < 0) goto diff_write_err;
     indent -= 4;
     if (fprintf(fp, "%*s}\n", indent, "") < 0) goto diff_write_err;
     fclose(fp);
@@ -154,14 +156,14 @@ int Diff::savenotes(DiffLine *dlp,          // DiffLine we're saving
 
 diff_write_err:
     stringstream ss;
-    ss << "Diff::savenotes(): '" << notes_filename << "': " << errmsg;
+    ss << "Diff::save_notes(): '" << notes_filename << "': " << errmsg;
     errmsg = ss.str();
     if (fp) fclose(fp);
     return -1;
 }
 
 // Load notes from specified file
-int Diff::loadnotes(const string& filename, int diff_index, int line_num, string& errmsg)
+int Diff::load_notes(const string& filename, int diff_index, int line_num, string& errmsg)
 {
     DiffLine &dl = diff_lines_[line_num-1];   // index is (line_num-1)
     // Open notes file
@@ -182,7 +184,7 @@ int Diff::loadnotes(const string& filename, int diff_index, int line_num, string
         if (s.find("commit_hash: ") != string::npos) continue; // ignore
         if (s.find("filename: "   ) != string::npos) continue; // ignore
         if (s.find("diffline {"   ) != string::npos) {
-            if (dl.loadnotes(ifs, errmsg) < 0) {
+            if (dl.load_notes(ifs, errmsg) < 0) {
                 string prefix = filename + string(": ");
                 errmsg.insert(0, prefix);
                 return -1;
@@ -227,7 +229,7 @@ int LoadNote(const string& filename, const string& commit_hash, vector<Diff> &di
     if (GetDiffIndexAndLineNum(filename, diff_index, line_num, errmsg) < 0) return -1;
 
     // Diff instance loads notes file
-    if (diffs[diff_index].loadnotes(filename, diff_index, line_num, errmsg) < 0) return -1;
+    if (diffs[diff_index].load_notes(filename, diff_index, line_num, errmsg) < 0) return -1;
     return 0;
 }
 

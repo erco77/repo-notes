@@ -166,7 +166,7 @@ void SaveNotes_CB(Fl_Widget *w, void *userdata)
     // Save the new notes
     string errmsg;
     size_t diff_index = dlp->diff_index();
-    if (G_diffs[diff_index].savenotes(dlp, errmsg) < 0) {
+    if (G_diffs[diff_index].save_notes(dlp, errmsg) < 0) {
         fl_alert("ERROR: SaveNotes_CB(): Diff index %ld: %s", diff_index, errmsg.c_str());
     }
     UpdateDiffsBrowser(G_diffs);            // update changes
