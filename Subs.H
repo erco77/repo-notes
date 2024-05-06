@@ -8,6 +8,13 @@
 
 using namespace std;
 
+// Fl_Terminal ANSI sequences to change colors of messages
+#define ANSI_RED   "\033[31m"    // nor red
+#define ANSI_GRN   "\033[32m"    // nor grn
+#define ANSI_INFO  "\033[2;32m"  // dim grn
+#define ANSI_INFO2 "\033[2;33m"  // dim yel
+#define ANSI_NOR   "\033[0m"     // normal color
+
 void StripCRLF_SUBS(char *s);
 void StripLeadingWhite_SUBS(string& s);
 void StringToLines_SUBS(string s, vector<string>& lines);

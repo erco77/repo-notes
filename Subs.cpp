@@ -15,6 +15,7 @@
 #include <regex>        // regex_replace.. (note: this really slows down g++!)
 
 #include "Subs.H"
+#include "MainWindow.H" // tty->printf()..
 
 // Strip out the trailing \n from string s
 void StripCRLF_SUBS(char *s) {
@@ -111,6 +112,7 @@ int LoadCommand_SUBS(const string& command,
                 vector<string>& lines,
                 string& errmsg)
 {
+    tty->printf(ANSI_INFO "Executing: %s\n" ANSI_NOR, command.c_str());
     char s[2048];
     FILE *fp = popen(command.c_str(), "r");
     if (!fp) {
@@ -164,7 +166,7 @@ int DescendDir_SUBS(const string& dirname,      // dirname to descend
 	} else {
 	    if (buf.st_mode & S_IFDIR) {
                 // Dir? Recurse into it
-                printf("FOUND SUBDIR: %s\n", pathname.c_str());
+                //DEBUG printf("FOUND SUBDIR: %s\n", pathname.c_str());
                 if ( DescendDir_SUBS(pathname.c_str(), files, warnings, errmsg) < 0) {
                     // Close dir and return up the recursion hierarchy
                     closedir(dirp);
@@ -172,7 +174,7 @@ int DescendDir_SUBS(const string& dirname,      // dirname to descend
                 }
             } else {
                 // Not a dir? It's a file, add to files[]
-                printf("FOUND FILE: %s\n", pathname.c_str());
+                //DEBUG tty->printf("FOUND FILE: %s\n", pathname.c_str());
                 files.push_back(pathname);
             }
         }
@@ -194,5 +196,6 @@ void StripLeadingWhite_SUBS(string& s)
 
 int DeleteFile_SUBS(const string& filename)
 {
+    tty->printf(ANSI_INFO "removing empty notes file: %s" ANSI_NOR, filename.c_str());
     return unlink(filename.c_str());
 }

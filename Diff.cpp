@@ -1,8 +1,5 @@
 // vim: autoindent tabstop=8 shiftwidth=4 expandtab softtabstop=4
 
-#include "Subs.H"
-#include "Diff.H"
-
 #include <string.h>     // strncmp
 #include <stdio.h>
 #include <errno.h>      // errno..
@@ -14,6 +11,12 @@
 #include <iostream>     // cout debugging
 #include <fstream>
 #include <iomanip>      // setw
+
+using namespace std;
+
+#include "Subs.H"
+#include "Diff.H"
+#include "MainWindow.H" // tty->printf()..
 
 // Load all diffs for the specified commit_hash.
 //
@@ -249,10 +252,9 @@ int LoadCommitNotes(const string& commit_hash, vector<Diff> &diffs, string& errm
     // Load all the notes files and apply them
     string emsg;
     for (size_t i=0; i<files.size(); i++) {
-        cout << "--- Loading notes file: " << files[i] << endl;
+        tty->printf(ANSI_INFO2 "Loading notes file: %s\n" ANSI_NOR, files[i].c_str());
         if (LoadNote(files[i], commit_hash, diffs, emsg) < 0) {
-            // accumulate error messages (if any) and report them last
-            errmsg += emsg + string("\n");
+            errmsg += emsg + string("\n");    // accumulate error messages (if any) and report them last
         }
     }
     return errmsg == "" ? 0 : -1;

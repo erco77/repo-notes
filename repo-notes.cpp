@@ -111,8 +111,8 @@ void UpdateFilenameBrowser(const string& commit_hash, vector<Diff>& diffs)
         exit(1);
     }
     // Load notes for this commit
-    cout << "Loading commit notes for commit hash " << commit_hash << endl;
     if (LoadCommitNotes(commit_hash, G_diffs, errmsg) < 0) {
+        tty->printf(ANSI_RED "%s" ANSI_NOR "\n", errmsg.c_str());
         fl_alert("ERROR: can't load notes for commit %s: %s",
                  commit_hash.c_str(), errmsg.c_str());
     }
@@ -212,10 +212,9 @@ int main()
 {
     // Create a custom color used for 'notes'
     Fl::set_color(16, 0xe0, 0xe6, 0xf2);        // Set Fl_Color(16) to light blue
-    Fl_Double_Window *win = make_window("repo-notes");
-    win->end();
-    win->show();
-    win->resizable(tile);
+    make_window("repo-notes");
+    mainwin->end();
+    mainwin->show();
 
     G_editnotes = new EditNotesDialog();
 

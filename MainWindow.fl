@@ -2,13 +2,16 @@
 version 1.0400
 header_name {.h}
 code_name {.cxx}
+decl {\#include <stdlib.h> // exit} {private local
+}
+
 Function {make_window(const char *title = 0)} {open
 } {
-  Fl_Window mainwin {open selected
-    xywh {398 64 920 500} type Double resizable
+  Fl_Window mainwin {open
+    xywh {126 244 920 580} type Double resizable
     code0 {o->label(title);} visible
   } {
-    Fl_Menu_Bar menubar {open
+    Fl_Menu_Bar menubar {
       xywh {0 0 920 25}
     } {
       Submenu {} {
@@ -17,6 +20,7 @@ Function {make_window(const char *title = 0)} {open
       } {
         MenuItem {} {
           label Quit
+          callback {exit(0);}
           xywh {0 0 100 20}
         }
       }
@@ -26,7 +30,7 @@ Function {make_window(const char *title = 0)} {open
       } {}
     }
     Fl_Tile tile {open
-      xywh {0 25 920 475} box FLAT_BOX color 46
+      xywh {0 25 920 555} box FLAT_BOX color 46 resizable
     } {
       Fl_Browser git_log_browser {
         xywh {0 25 250 475} type Hold textfont 13 textsize 10
@@ -35,8 +39,18 @@ Function {make_window(const char *title = 0)} {open
         xywh {250 25 250 475} type Hold textfont 13 textsize 10
       }
       Fl_Browser diffs_browser {
-        xywh {500 25 420 475} type Hold textfont 13 textsize 10
+        xywh {500 25 420 475} type Hold textfont 13 textsize 10 resizable
+      }
+      Fl_Terminal tty {
+        xywh {0 500 920 80} color 53 textsize 10 textcolor 33
+        code0 {o->hscrollbar_style(Fl_Terminal::ScrollbarStyle::SCROLLBAR_OFF);}
       }
     }
+  }
+  code {// Extra code for main_window() init..
+tile->size_range(git_log_browser,  50, 100);
+tile->size_range(filename_browser, 50, 100);
+tile->size_range(diffs_browser,    50, 100);
+tile->size_range(tty,              50, 100);} {selected
   }
 }

@@ -16,14 +16,24 @@ Widget:
   :                        ::                       :: 001 +NEW aaaa                              :
   :                        ::                       :: 002 +NEW bbbb                              :
   :                        ::                       ::============================================:
-  :                        ::                       ::     ^  This mod here affects ABC and       :
+  :   [commits_browser]    ::   [file_browser]      ::     ^  This mod here affects ABC and       :
   :                        ::                       ::        is later reverted in commit XYZ     :
   :                        ::                       ::============================================:
   :                        ::                       :: 003 +NEW cccc                              :
-  :                        ::                       :: 004 context a                              :
+  :                        ::                       :: 004 context a    [diffs_browser]           :
   :                        ::                       :: 005 context b                              :
   :                        ::                       :: 006                                        :
-  `------------------------``-----------------------``--------------------------------------------`
+  :-----------------------------------------------------------------------------------------------: <-- Edge "E"
+  : status tty                         [tty]                                                      :
+  :_______________________________________________________________________________________________:
+
+ NOTE: To get the [tty] widget to keep its vertical size during window resizing 
+ (so that the other widgets enlarge in height instead of the tty, unless the tty area itself
+ is enlarged by moving edge "E"), an "invisible child box" is set to be the resizable() and is
+ positioned roughly where the [diffs_browser] is. So:
+
+     win->resizable(tile);		// window's resizable is the tile
+     tile->resizable(invisible_box);	// tile's resizable is the invisible box
 
 Fitting notes:
     As diff (unlimited context) is added to Diffs/comments widget, it looks matching lines#
