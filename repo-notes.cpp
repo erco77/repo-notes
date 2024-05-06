@@ -153,8 +153,8 @@ void FilenameBrowser_CB(Fl_Widget*, void*)
 
 void YouCantEdit()
 {
-    fl_alert("You can't add/edit the filename header lines.\n"
-             "(Pick one of the diff lines instead)");
+    fl_alert("You can't add notes to this..\n"
+             "Pick one of the diff lines instead.");
 }
 
 // When user hits 'Save' in EditNotesDialog

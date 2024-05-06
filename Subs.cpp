@@ -5,7 +5,7 @@
 #include <sys/stat.h>   // stat()
 #include <sys/dir.h>    // opendir()
 #include <stdio.h>      // popen
-#include <unistd.h>
+#include <unistd.h>     // unlink
 #include <string.h>     // strchr
 #include <fcntl.h>
 
@@ -47,6 +47,14 @@ bool IsDir_SUBS(const string& dirname) {
     struct stat buf;
     if (stat(dirname.c_str(), &buf) < 0) return false;
     if (! (buf.st_mode & S_IFDIR)) return false;
+    return true;
+}
+
+// Is filename an existing "regular file"?
+bool IsFile_SUBS(const string& filename) {
+    struct stat buf;
+    if (stat(filename.c_str(), &buf) < 0) return false;
+    if (! (buf.st_mode & S_IFREG)) return false;
     return true;
 }
 
@@ -182,4 +190,9 @@ int DescendDir_SUBS(const string& dirname,      // dirname to descend
 void StripLeadingWhite_SUBS(string& s)
 {
     s = regex_replace(s, regex("^[ \t]*"), "");
+}
+
+int DeleteFile_SUBS(const string& filename)
+{
+    return unlink(filename.c_str());
 }

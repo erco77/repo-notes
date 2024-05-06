@@ -129,10 +129,18 @@ int Diff::save_notes(DiffLine *dlp,         // DiffLine we're saving
 {
     // Create notes filename
     int indent = 0;
-    const bool create   = true;           // ensures the directory hierarchy will exist
+    const bool create   = true;             // ensures the directory hierarchy will exist
     int        line_num = dlp->line_num();
     string     filename = NotesFilename_SUBS(commit_hash(), diff_index(), line_num, create);  // creates dirs
 
+    // Notes empty? Remove file (if any)
+    string notes = dlp->notes();
+    StripLeadingWhite_SUBS(notes);
+    if (notes == "") {
+        if (IsFile_SUBS(filename))          // remove existing notes file (if any)
+            DeleteFile_SUBS(filename);
+        return 0;                           // done
+    }
     // Create the notes file, save the notes
     ofstream ofs(filename);
     if (!ofs) return FileWriteError(filename, errmsg);
@@ -249,7 +257,3 @@ int LoadCommitNotes(const string& commit_hash, vector<Diff> &diffs, string& errm
     }
     return errmsg == "" ? 0 : -1;
 }
-
-// for (const auto &file : files) {
-//     cout << file << endl;
-// }
