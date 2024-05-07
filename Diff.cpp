@@ -31,7 +31,8 @@ int LoadDiffs(const string& commit_hash, vector<Diff> &diffs, string& errmsg)
     // Load all diffs for this commit
     vector<string> lines;
     //DEBUG cout << "Loading diffs from commit hash " << commit_hash << ": ";
-    if (LoadCommand_SUBS(string("git show -U10000 ") + commit_hash, lines, errmsg) < 0) {
+    //if (LoadCommand_SUBS(string("git show -U10000 ") + commit_hash, lines, errmsg) < 0) {
+    if (LoadCommand_SUBS(string("git show ") + commit_hash, lines, errmsg) < 0) {
         return -1;
     }
     //DEBUG cout << lines.size() << " loaded." << endl;

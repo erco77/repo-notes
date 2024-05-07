@@ -51,6 +51,6 @@ Function {make_window(const char *title = 0)} {open
 tile->size_range(git_log_browser,  50, 100);
 tile->size_range(filename_browser, 50, 100);
 tile->size_range(diffs_browser,    50, 100);
-tile->size_range(tty,              50, 100);} {selected
+tile->size_range(tty,              50, 50);} {selected
   }
 }

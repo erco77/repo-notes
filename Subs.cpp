@@ -12,15 +12,16 @@
 #include <iostream>
 #include <string>
 #include <sstream>      // stringstream
-#include <regex>        // regex_replace.. (note: this really slows down g++!)
+//#include <regex>        // regex_replace.. (note: this really slows down g++!)
 
 #include "Subs.H"
 #include "MainWindow.H" // tty->printf()..
 
 // Strip out the trailing \n from string s
 void StripCRLF_SUBS(char *s) {
-    s = strchr(s, '\n');
-    if (s) *s = 0;
+    char *ss;
+    ss = strchr(s, '\n'); if (ss) *ss = 0;
+    ss = strchr(s, '\r'); if (ss) *ss = 0;
 }
 
 // Convert a multiline string into vector of separate lines
@@ -191,7 +192,11 @@ int DescendDir_SUBS(const string& dirname,      // dirname to descend
 // Remove leading whitespace from string 's'
 void StripLeadingWhite_SUBS(string& s)
 {
-    s = regex_replace(s, regex("^[ \t]*"), "");
+    int whtcnt = 0;
+    const char *ss = s.c_str();
+    while (*ss==' ' || *ss=='\t') { ++ss; ++whtcnt; }
+    s = s.erase(0, whtcnt);
+    // s = regex_replace(s, regex("^[ \t]*"), "");
 }
 
 int DeleteFile_SUBS(const string& filename)
