@@ -201,6 +201,6 @@ void StripLeadingWhite_SUBS(string& s)
 
 int DeleteFile_SUBS(const string& filename)
 {
-    tty->printf(ANSI_INFO "removing empty notes file: %s" ANSI_NOR, filename.c_str());
+    tty->printf(ANSI_INFO "removing empty notes file: %s\n" ANSI_NOR, filename.c_str());
     return unlink(filename.c_str());
 }

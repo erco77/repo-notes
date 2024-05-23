@@ -17,6 +17,7 @@ using namespace std;
 #include "Subs.H"
 #include "Diff.H"
 #include "MainWindow.H" // tty->printf()..
+#include "version.h"    // VERSION, GITVERSION
 
 // Load all diffs for the specified commit_hash.
 //
@@ -115,6 +116,7 @@ int DiffLine::load_notes(ifstream &ifs, string& errmsg)
     notes_.clear();
     while (getline(ifs, s)) {
         StripLeadingWhite_SUBS(s);          // strip leading whitespace
+        if (s[0] == '#') continue;          // skip comment lines
         if (s.find("line_num: " ) != string::npos) continue; // ignore
         if (s.find("notes: ") != string::npos) {
             notes_.push_back(s.substr(strlen("notes: ")));
@@ -149,7 +151,8 @@ int Diff::save_notes(DiffLine *dlp,         // DiffLine we're saving
     ofstream ofs(filename);
     if (!ofs) return FileWriteError(filename, errmsg);
     // Save the parent Diff class's contents to a file so it's associated with the note.
-    ofs << setw(indent) << "" << "diff_index:  " << diff_index()     << "\n"
+    ofs << "# repo-notes VERSION="  << VERSION << ", GIT=" << GITVERSION << "\n"
+        << setw(indent) << "" << "diff_index:  " << diff_index()     << "\n"
         << setw(indent) << "" << "commit_hash: " << commit_hash()    << "\n"
         << setw(indent) << "" << "filename:    " << this->filename() << "\n"
         << setw(indent) << "" << "diffline {\n";
@@ -182,6 +185,7 @@ int Diff::load_notes(const string& filename, int diff_index, int line_num, strin
     string s;
     while (getline(ifs, s)) {
         StripLeadingWhite_SUBS(s);                    // strip leading whitespace
+        if (s[0] == '#') continue;                    // skip comment lines
         if (s == "") continue;                        // ignore blank lines
         if (s.find("diff_index: " ) != string::npos) continue; // ignore
         if (s.find("commit_hash: ") != string::npos) continue; // ignore

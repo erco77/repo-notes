@@ -28,6 +28,7 @@ using namespace std;
 #include "Notes.H"      // our notes
 #include "Commit.H"     // commits from git
 #include "Diff.H"       // single commit diff
+#include "version.h"
 
 // Globals
 vector<Diff> G_diffs;   // all diffs for current project
@@ -38,6 +39,7 @@ EditNotesDialog *G_editnotes = 0;
 // Rebuild the diffs_browser contents from a diffs[] array
 void UpdateDiffsBrowser(vector<Diff>& diffs)
 {
+    int save = diffs_browser->value();
     diffs_browser->clear();
 
     // For each diff, add FILENAME and DIFF LINES to browser..
@@ -84,6 +86,7 @@ void UpdateDiffsBrowser(vector<Diff>& diffs)
             }
         }
     }
+    diffs_browser->value(save);
 }
 
 // Run 'git log' and put its output in the left browser
@@ -213,6 +216,7 @@ int main()
     // Create a custom color used for 'notes'
     Fl::set_color(16, 0xe0, 0xe6, 0xf2);        // Set Fl_Color(16) to light blue
     make_window("repo-notes");
+    menubar->add("Help/Version: " VERSION " " GITVERSION);
     mainwin->end();
     mainwin->show();
 
