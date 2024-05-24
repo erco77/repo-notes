@@ -78,11 +78,11 @@ void UpdateDiffsBrowser(vector<Diff>& diffs)
             if (dl.notes_size() == 0) continue; // no notes? skip
             // Add all lines of the user's notes
             for (size_t i=0; i<dl.notes_size(); i++) {
-                string out = string(notes_fmt)  // add notes prefix '@' formatting 
+                string out = string(notes_fmt)  // add notes prefix '@' formatting
                            + string("   ")      // indent
                            + dl.notes(i);       // content
                 // add formatted line to browser, associated with this dl (DiffLine)
-                diffs_browser->add(out.c_str(), (void*)&dl);
+                diffs_browser->add(out.c_str(), (void*)&dl);    // diffs_browser's userdata() is DiffLine
             }
         }
     }
@@ -106,13 +106,22 @@ void UpdateGitLogBrowser(vector<Commit>& commits)
 // Update the filename browser with files from commit 'commit_hash'
 void UpdateFilenameBrowser(const string& commit_hash, vector<Diff>& diffs)
 {
-    // Load diffs for first commit (if any)
+    // Load diffs for this commit
     string errmsg;
     diffs.clear();      // clear any previous first
     if (LoadDiffs(commit_hash, diffs, errmsg) < 0) {
         fl_alert("ERROR: %s" , errmsg.c_str());
         exit(1);
     }
+
+//DEBUG    printf("Loaded %ld diffs:\n", diffs.size());
+//DEBUG    for (size_t t=0; t<diffs.size(); t++) {
+//DEBUG        Diff &diff = diffs[t];
+//DEBUG        for (size_t r=0; r<diff.diff_lines(); r++) {
+//DEBUG            DiffLine &dl = diff.diff_line(r);
+//DEBUG        }
+//DEBUG    }
+
     // Load notes for this commit
     if (LoadCommitNotes(commit_hash, G_diffs, errmsg) < 0) {
         tty->printf(ANSI_RED "%s" ANSI_NOR "\n", errmsg.c_str());
@@ -122,7 +131,9 @@ void UpdateFilenameBrowser(const string& commit_hash, vector<Diff>& diffs)
     // Update browser with filenames from loaded diffs[]
     filename_browser->clear();
     for (size_t i=0; i<diffs.size(); i++ ) {
-        filename_browser->add(diffs[i].filename().c_str());
+        Diff &diff = diffs[i];
+        const char *filename = diff.filename().c_str();
+        filename_browser->add(filename, (void*)&diff);  // filename browser's userdata() is Diff ptr
     }
     // Pick the first item
     if (diffs.size() > 0) {
@@ -150,8 +161,15 @@ void GitLogBrowser_CB(Fl_Widget*, void*)
 void FilenameBrowser_CB(Fl_Widget*, void*)
 {
     int index = filename_browser->value();
-    const char *s = (index > 0) ? filename_browser->text(index) : "";
-    cout << "commit files browser picked: '" << s << "'" << endl;
+    for (int t=1; t<=diffs_browser->size(); t++ ) {    // index 1 based..!
+        DiffLine *dl = (DiffLine*)diffs_browser->data(t);
+        if (!dl) { continue; }
+        // Found line? Scroll diffs_browser to this line
+        if (dl->diff_index() == (size_t)index-1) {
+            diffs_browser->topline(t-1);            // -1: shows the "Filename" line
+            return;
+        }
+    }
 }
 
 void YouCantEdit()
@@ -184,31 +202,38 @@ string GetEditNotesWindowTitle(DiffLine *dlp)
     return ss.str();
 }
 
-void AddNotes_CB(Fl_Widget *w, void *userdata)
+void AddNotes_CB(Fl_Widget*, void *userdata)
 {
     DiffLine *dlp = (DiffLine*)userdata;
-    if (!dlp) return YouCantEdit(); 
+    if (!dlp) return YouCantEdit();
     G_editnotes->title(GetEditNotesWindowTitle(dlp));     // set dialog window's title
     G_editnotes->notes(dlp->notes());                     // load editor with previous notes
     G_editnotes->save_callback(SaveNotes_CB, (void*)dlp); // save button cb
     G_editnotes->show();                                  // show dialog
 }
 
-// Handle posting right-click menu over diffs_browser
-void DiffsBrowserPopupMenu_CB(Fl_Widget *w, void *userdata)
+// Someone left or right clicked a line in diffs_browser
+void DiffsBrowser_CB(Fl_Widget *w, void *d)
 {
-    // Only interested in right clicks
-    if (Fl::event_button() != 3) return;
-
-    // Get 'Diff' instance as userdata for item clicked on
     int index = diffs_browser->value();
-    DiffLine *dlp = (DiffLine*)diffs_browser->data(index);
-    if (!dlp) return YouCantEdit(); 
+    DiffLine *dl = (DiffLine*)diffs_browser->data(index);
+//DEBUG    dl->show_self();
 
-    // Dynamically create menu, pop it up
-    Fl_Menu_Button menu(Fl::event_x(), Fl::event_y(), 80, 1);
-    menu.add("Add\\/edit notes..", 0, AddNotes_CB, (void*)dlp);
-    menu.popup();
+    // Double clicked item? Edit, done
+    if (Fl::event_clicks() > 0)
+        { AddNotes_CB(0, dl); return; }
+
+    // Right clicked on item? Show context menu
+    if (Fl::event_button() == 3) {
+        // Get 'Diff' instance as userdata for item clicked on
+        int index = diffs_browser->value();
+        DiffLine *dlp = (DiffLine*)diffs_browser->data(index);
+        if (!dlp) return YouCantEdit();
+        // Dynamically create menu, pop it up
+        Fl_Menu_Button menu(Fl::event_x(), Fl::event_y(), 80, 1);
+        menu.add("Add\\/edit notes..", 0, AddNotes_CB, (void*)dlp);
+        menu.popup();
+    }
 }
 
 int main()
@@ -223,7 +248,7 @@ int main()
     G_editnotes = new EditNotesDialog();
 
     // Configure diff_browser's popup menu
-    diffs_browser->callback(DiffsBrowserPopupMenu_CB);
+    diffs_browser->callback(DiffsBrowser_CB);
 
     // Configure callbacks
     git_log_browser->when(FL_WHEN_CHANGED);

@@ -55,7 +55,7 @@ int LoadDiffs(const string& commit_hash, vector<Diff> &diffs, string& errmsg)
     //    |--- /dev/null
     //    |+++ b/Makefile                               <-- WE NEED THESE FOR filenames[], without the "b/"
     //    |@@ -0,0 +1,8 @@
-    //    |+run: repo-notes         
+    //    |+run: repo-notes
     //    |+       ./repo-notes
     //    |..
     //
@@ -129,9 +129,21 @@ int DiffLine::load_notes(ifstream &ifs, string& errmsg)
     return 0;
 }
 
+// Show self (debugging)
+void DiffLine::show_self() {
+    cout << "DiffLine:\n"
+         << "    diff_index=" << diff_index_ << "\n"
+         << "      line_num=" << line_num_   << "\n"
+         << "      line_str=" << line_str_   << "\n";
+    for (size_t t=0; t<notes_.size(); t++) {
+        cout << "     notes[" << setw(2) << t << "]=" << notes_[t] << "\n";
+    }
+}
+
+
 // Save notes for a specified dlp
 int Diff::save_notes(DiffLine *dlp,         // DiffLine we're saving
-                     string& errmsg)        // if we return -1, this has the error message 
+                     string& errmsg)        // if we return -1, this has the error message
 {
     // Create notes filename
     int indent = 0;
@@ -222,7 +234,7 @@ int GetDiffIndexAndLineNum(const string& filename,
             return 0;       // success
         }
     }
-    errmsg += string("In filename '") + filename 
+    errmsg += string("In filename '") + filename
             + string("': can't parse diff_index + line_num integers");
     return -1;
 }

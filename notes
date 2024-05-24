@@ -1,3 +1,24 @@
+> Show the number of notes in each commit in left window.
+
+> Interconnect the filenames browser and diff browser:
+   * Scrolling the diff browser should highlight the filename
+   (DONE) * Clicking the filename should jump position in diff browser
+
+> Add a search function that includes searching for notes
+
+> Add a way to browse just the notes
+
+> Add a few buttons in the notes text editor to add commonly
+  needed text, including ascii art up/down buttons, and/or
+  UTF8 arrows, e.g.
+
+      /|\
+       |
+
+       |
+      \|/
+
+> Add date stamps to notes, showing when each note was last edited
 
    Commits                  Diffs/Comments
   .------------------------.--------------------------------------------.

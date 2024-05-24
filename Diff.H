@@ -3,6 +3,8 @@
 #ifndef DIFF_H
 #define DIFF_H
 
+#include <iostream>
+#include <iomanip>
 #include <string>
 #include <vector>
 
@@ -54,6 +56,7 @@ public:
     }
     int save_notes(ofstream& ofs, int indent, string& errmsg);
     int load_notes(ifstream &ifs, string& errmsg);
+    void show_self();
 };
 
 //
@@ -81,7 +84,7 @@ public:
     string filename() const        { return filename_; }
 
     // Add a diff line
-    //    NOTE: Assumes diff_index() is valid
+    //    NOTE: Assumes our diff_index() is valid
     //
     void add_line(const string &val, int line_num) {
         DiffLine dl;

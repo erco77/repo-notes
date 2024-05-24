@@ -91,7 +91,7 @@ string CommitDirname_SUBS(const string& commit_hash, bool create) {
 //
 //     ..if we trivially replace '/' with '_' in all filenames, the above two filenames
 //     both end up being "somedir_file", even though they're separate.
-//            
+//
 string NotesFilename_SUBS(const string& commit_hash,
                           int   diff_index,       // what we use for <difffile_index#>
                           int   line_num,         // what we use as the <line#>
