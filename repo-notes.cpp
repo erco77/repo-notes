@@ -132,8 +132,8 @@ void UpdateFilenameBrowser(const string& commit_hash, vector<Diff>& diffs)
     filename_browser->clear();
     for (size_t i=0; i<diffs.size(); i++ ) {
         Diff &diff = diffs[i];
-        const char *filename = diff.filename().c_str();
-        filename_browser->add(filename, (void*)&diff);  // filename browser's userdata() is Diff ptr
+        string filename = string("@.") + diff.filename();
+        filename_browser->add(filename.c_str(), (void*)&diff);  // filename browser's userdata() is Diff ptr
     }
     // Pick the first item
     if (diffs.size() > 0) {
